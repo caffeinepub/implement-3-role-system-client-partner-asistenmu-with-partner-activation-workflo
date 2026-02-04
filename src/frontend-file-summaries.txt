@@ -1,0 +1,10 @@
+{
+  "frontend/src/App.tsx": "Main application component that orchestrates authentication flow, profile setup, and displays admin/owner status with a polished UI including header, main content area, and footer.",
+  "frontend/src/components/AuthButton.tsx": "Reusable authentication button component that handles Internet Identity login/logout with loading states and proper cache clearing.",
+  "frontend/src/components/ProfileSetupModal.tsx": "Modal dialog that prompts first-time authenticated users to set up their profile name, preventing dismissal until completed.",
+  "frontend/src/components/AdminOwnerStatusCard.tsx": "Comprehensive status card displaying user profile, principal ID, role information, and admin status with visual badges and security notices.",
+  "frontend/src/components/AdminOnlyActions.tsx": "Admin-only panel for assigning user roles with backend authorization enforcement and clear error handling for unauthorized access attempts.",
+  "frontend/src/hooks/useQueries.ts": "React Query hooks for all backend operations including profile management, role queries, admin checks, and role assignment with proper cache invalidation.",
+  "frontend/src/index.css": "Global styles with warm terracotta/amber OKLCH color system for both light and dark modes, avoiding blue/purple as requested.",
+  "frontend/tailwind.config.js": "Tailwind configuration extended with warm color palette, custom shadows, and design tokens mapped to CSS variables."
+}

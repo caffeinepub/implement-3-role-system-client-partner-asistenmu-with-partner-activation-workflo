@@ -1,0 +1,110 @@
+{
+  "kind": "build_request",
+  "title": "Integrate secure first-login owner/admin pattern (backend-enforced)",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Implement a backend-enforced owner/admin pattern in the single Motoko actor where the first authenticated principal to successfully access the app becomes the permanent owner/admin, and this owner value cannot be overwritten by later logins or any non-owner call.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "bantu integrasikan pola ini"
+        ]
+      },
+      "acceptanceCriteria": [
+        "On an empty deployment, the first authenticated principal to trigger owner initialization is stored as owner/admin.",
+        "Subsequent authenticated principals do not change/overwrite the stored owner/admin value.",
+        "No update method exists that allows a non-owner to set, replace, or clear the owner/admin value.",
+        "Owner/admin checks are enforced in backend methods (not just in the frontend)."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Expose backend APIs needed to support the pattern, including: (1) a read method to return the current owner/admin principal (or an optional/empty value if uninitialized), (2) a read method to return whether the caller is the owner/admin, and (3) an initialization pathway that safely sets owner/admin exactly once (either explicitly via an idempotent init call or implicitly on first protected action).",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "bantu integrasikan pola ini"
+        ]
+      },
+      "acceptanceCriteria": [
+        "If owner/admin is not yet set, the initialization pathway sets it exactly once and becomes stable thereafter.",
+        "If owner/admin is already set, calling the initialization pathway does not change it and returns a predictable response.",
+        "The backend provides a clear boolean result for 'isCallerAdmin' based on the stored owner/admin principal."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Add frontend integration that uses the existing Internet Identity flow to display the current admin/owner status: show the connected principal, whether they are the owner/admin, and (if uninitialized) indicate that the first authenticated user will become the owner/admin.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "bantu integrasikan pola ini"
+        ]
+      },
+      "acceptanceCriteria": [
+        "After login, the UI displays the connected principal and the 'Admin/Owner' status based on backend data.",
+        "If the owner/admin is uninitialized, the UI communicates that the first authenticated user becomes the owner/admin (based on backend state).",
+        "The UI does not rely on client-only logic for admin status; it reflects backend results."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Ensure any admin-only UI actions (if present or added for demonstration) are gated by backend authorization: the UI may hide/disable controls for non-admins, but the backend must still reject non-admin calls to admin-only methods with a clear error.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "bantu integrasikan pola ini"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When a non-owner calls an admin-only backend method, the call is rejected by the backend.",
+        "When the owner calls the same method, it succeeds.",
+        "Frontend behavior (hide/disable) matches backend authorization but does not replace it."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Apply a coherent, creative visual theme for the frontend (colors, typography, spacing, and component styling) and use it consistently across the admin/owner status UI. Avoid blue/purple as primary brand colors.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "bantu integrasikan pola ini"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The app uses a consistent theme (primary/secondary colors, typography scale, and spacing) across the relevant screens/components.",
+        "Primary styling does not use blue/purple as the main brand color."
+      ]
+    }
+  ],
+  "constraints": [
+    "Backend must remain a single Motoko actor with all logic in backend/main.mo.",
+    "Do not edit immutable frontend paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui (compose instead).",
+    "Enforce admin/owner authorization in the backend; frontend checks are only supplementary."
+  ],
+  "nonGoals": [
+    "Role-based access control beyond a single permanent owner/admin (e.g., multiple admins, roles/permissions matrix).",
+    "Third-party authentication providers beyond Internet Identity."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

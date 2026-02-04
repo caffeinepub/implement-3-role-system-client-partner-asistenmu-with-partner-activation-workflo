@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "Integrate a secure admin/owner pattern where the first successful login becomes the permanent admin (owner), enforced on the backend to prevent override.",
+  "existing_features": [
+    {
+      "id": "feature-add-frontend-integration-that-uses-the-existing-internet-identity-flow-to-display-the-current-admin-owner-status-show-the-connected-principal-whether-they-are-the-owner-admin-and-if-uninitialized-indicate-that-the-first-authenticated-user-will-become-the-owner-admin",
+      "title": "Add frontend integration that uses the existing Internet Identity flow to display the current admin/owner status: show the connected principal, whether they are the owner/admin, and (if uninitialized) indicate that the first authenticated user will become the owner/admin.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-any-admin-only-ui-actions-if-present-or-added-for-demonstration-are-gated-by-backend-authorization-the-ui-may-hide-disable-controls-for-non-admins-but-the-backend-must-still-reject-non-admin-calls-to-admin-only-methods-with-a-clear-error",
+      "title": "Ensure any admin-only UI actions (if present or added for demonstration) are gated by backend authorization: the UI may hide/disable controls for non-admins, but the backend must still reject non-admin calls to admin-only methods with a clear error.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-coherent-creative-visual-theme-for-the-frontend-colors-typography-spacing-and-component-styling-and-use-it-consistently-across-the-admin-owner-status-ui-avoid-blue-purple-as-primary-brand-colors",
+      "title": "Apply a coherent, creative visual theme for the frontend (colors, typography, spacing, and component styling) and use it consistently across the admin/owner status UI. Avoid blue/purple as primary brand colors.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Integrate secure first-login owner/admin pattern (first login becomes permanent admin; backend-enforced; cannot be overridden)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Implement a backend-enforced owner/admin pattern in the single Motoko actor where the first authenticated principal to successfully access the app becomes the permanent owner/admin, and this owner value cannot be overwritten by later logins or any non-owner call.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Expose backend APIs needed to support the pattern, including: (1) a read method to return the current owner/admin principal (or an optional/empty value if uninitialized), (2) a read method to return whether the caller is the owner/admin, and (3) an initialization pathway that safely sets owner/admin exactly once (either explicitly via an idempotent init call or implicitly on first protected action).",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    }
+  ],
+  "architectural_notes": [
+    "Implement backend-enforced owner/admin assignment: first successful login sets owner; subsequent logins must not be able to change/overwrite owner role."
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "projectName": "Integrate secure first-login owner/admin pattern (backend-enforced)",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

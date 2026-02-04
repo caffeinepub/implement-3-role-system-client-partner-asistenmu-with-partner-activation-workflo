@@ -1,0 +1,69 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-add-frontend-integration-that-uses-the-existing-internet-identity-flow-to-display-the-current-admin-owner-status-show-the-connected-principal-whether-they-are-the-owner-admin-and-if-uninitialized-indicate-that-the-first-authenticated-user-will-become-the-owner-admin",
+      "featureTitle": "Add frontend integration that uses the existing Internet Identity flow to display the current admin/owner status: show the connected principal, whether they are the owner/admin, and (if uninitialized) indicate that the first authenticated user will become the owner/admin.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/AdminOwnerStatusCard.tsx",
+        "frontend/src/components/AuthButton.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-any-admin-only-ui-actions-if-present-or-added-for-demonstration-are-gated-by-backend-authorization-the-ui-may-hide-disable-controls-for-non-admins-but-the-backend-must-still-reject-non-admin-calls-to-admin-only-methods-with-a-clear-error",
+      "featureTitle": "Ensure any admin-only UI actions (if present or added for demonstration) are gated by backend authorization: the UI may hide/disable controls for non-admins, but the backend must still reject non-admin calls to admin-only methods with a clear error.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/AdminOnlyActions.tsx",
+        "frontend/src/components/AdminOwnerStatusCard.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-apply-a-coherent-creative-visual-theme-for-the-frontend-colors-typography-spacing-and-component-styling-and-use-it-consistently-across-the-admin-owner-status-ui-avoid-blue-purple-as-primary-brand-colors",
+      "featureTitle": "Apply a coherent, creative visual theme for the frontend (colors, typography, spacing, and component styling) and use it consistently across the admin/owner status UI. Avoid blue/purple as primary brand colors.",
+      "files": [
+        "frontend/src/components/AdminOwnerStatusCard.tsx",
+        "frontend/src/components/AuthButton.tsx",
+        "frontend/src/index.css",
+        "frontend/tailwind.config.js"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

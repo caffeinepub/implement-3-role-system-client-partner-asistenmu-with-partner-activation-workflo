@@ -1,0 +1,103 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-04T12:30:30.264Z",
+  "summary": "The diff adds a frontend UI/theme and various auth/role/profile hooks/components, but the backend Motoko actor does not implement the requested first-login permanent owner/admin pattern or the required owner/admin APIs. Several frontend calls reference backend methods that are not present in the added backend/main.mo. The diff also introduces an unrequested role/permissions system with secret-token initialization.",
+  "missing_requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "Implement a backend-enforced first-login permanent owner/admin pattern where the first authenticated principal becomes the permanent owner/admin and cannot be overwritten, and enforce owner checks in backend methods.",
+      "reason": "backend/main.mo contains no stable owner/admin principal storage, no 'set exactly once' logic tied to first authenticated access, and no explicit owner/admin enforcement based on a stored owner value. Authorization instead appears delegated to AccessControl/permissions without showing the required first-login owner behavior.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Expose backend APIs: (1) read current owner/admin principal (optional if unset), (2) read whether caller is owner/admin, and (3) an initialization pathway that sets owner/admin exactly once (idempotent or implicit).",
+      "reason": "No backend methods for 'getOwner', 'isCallerAdmin' (based on stored owner), or any one-time owner initialization pathway are shown in backend/main.mo. Frontend queries call isCallerAdmin(), getCallerUserRole(), assignCallerUserRole(), and _initializeAccessControlWithSecret(), but these are not present in the backend file shown.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/hooks/useActor.ts"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Frontend displays connected principal and admin/owner status based on backend state, and if uninitialized indicates first authenticated user becomes owner/admin.",
+      "reason": "While the UI displays principal and an 'Admin / Owner' badge driven by isAdmin, the diff does not show any backend owner state to reflect, nor a UI path that checks/display 'owner uninitialized' messaging based on a backend 'owner is unset' response. The frontend relies on isCallerAdmin() and role queries whose backend counterparts are not shown.",
+      "evidence": [
+        "frontend/src/components/AdminOwnerStatusCard.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "backend/main.mo",
+        "frontend/src/App.tsx"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "Any admin-only UI actions must be gated by backend authorization; backend must reject non-owner calls with a clear error and allow owner calls.",
+      "reason": "An admin-only UI panel (AdminOnlyActions) calls assignCallerUserRole(), but backend/main.mo does not include an admin-only update method for this action (or any owner-only demonstration method) that enforces owner/admin authorization and rejects non-admins.",
+      "evidence": [
+        "frontend/src/components/AdminOnlyActions.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "backend/main.mo"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Role-based access control system with multiple roles (admin/user/guest) and role assignment UI (assignCallerUserRole), which goes beyond a single permanent owner/admin.",
+      "reason": "BuildRequest explicitly states non-goal of RBAC beyond a single permanent owner/admin. The diff introduces UserRole enum usage and a role assignment workflow.",
+      "evidence": [
+        "frontend/src/components/AdminOnlyActions.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    },
+    {
+      "description": "Secret-token-based access-control initialization via URL parameter 'caffeineAdminToken' and a backend method '_initializeAccessControlWithSecret'.",
+      "reason": "The BuildRequest specifies first-login owner/admin pattern using Internet Identity principals; it does not request secret-token initialization or URL-param based admin bootstrap.",
+      "evidence": [
+        "frontend/src/hooks/useActor.ts",
+        "frontend/src/utils/urlParams.ts"
+      ]
+    },
+    {
+      "description": "User profile setup flow (ProfileSetupModal) and profile CRUD methods as a primary feature.",
+      "reason": "The BuildRequest focuses on owner/admin initialization and status display; profile creation/storage is not requested as part of the owner/admin pattern requirements.",
+      "evidence": [
+        "frontend/src/components/ProfileSetupModal.tsx",
+        "backend/main.mo",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/App.tsx"
+      ]
+    },
+    {
+      "description": "Use of external authorization modules (authorization/MixinAuthorization and authorization/access-control) and permission checks (#user), rather than implementing the explicit owner/admin-first-login pattern in backend/main.mo.",
+      "reason": "The request requires a backend-enforced first-login permanent owner/admin in the single actor; introducing a separate permissions framework is not requested and the required owner APIs are not shown.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    }
+  ],
+  "confidence": 0.74,
+  "changed_files": [
+    "all_files_summary.json",
+    "backend/main.mo",
+    "frontend-file-summaries.txt",
+    "frontend/index.css",
+    "frontend/index.html",
+    "frontend/src/App.tsx",
+    "frontend/src/components/AdminOnlyActions.tsx",
+    "frontend/src/components/AdminOwnerStatusCard.tsx",
+    "frontend/src/components/AuthButton.tsx",
+    "frontend/src/components/ProfileSetupModal.tsx",
+    "frontend/src/hooks/useActor.ts",
+    "frontend/src/hooks/useInternetIdentity.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/index.css",
+    "frontend/src/main.tsx",
+    "frontend/src/utils/urlParams.ts",
+    "frontend/tailwind.config.js",
+    "project_state.json"
+  ]
+}

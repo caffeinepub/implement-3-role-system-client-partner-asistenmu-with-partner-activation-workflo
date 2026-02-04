@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --radius: 0.75rem;
+        
+        /* Warm terracotta/amber theme - avoiding blue/purple */
+        --background: 0.98 0.005 40;
+        --foreground: 0.20 0.015 40;
+        
+        --card: 1 0 0;
+        --card-foreground: 0.20 0.015 40;
+        
+        --popover: 1 0 0;
+        --popover-foreground: 0.20 0.015 40;
+        
+        /* Primary: Warm terracotta */
+        --primary: 0.55 0.18 35;
+        --primary-foreground: 0.98 0.005 40;
+        
+        /* Secondary: Soft sand */
+        --secondary: 0.92 0.02 50;
+        --secondary-foreground: 0.25 0.02 40;
+        
+        --muted: 0.95 0.01 45;
+        --muted-foreground: 0.50 0.01 40;
+        
+        /* Accent: Warm amber */
+        --accent: 0.75 0.15 60;
+        --accent-foreground: 0.20 0.015 40;
+        
+        --destructive: 0.55 0.22 25;
+        --destructive-foreground: 0.98 0.005 40;
+        
+        --border: 0.90 0.01 45;
+        --input: 0.90 0.01 45;
+        --ring: 0.55 0.18 35;
+        
+        --chart-1: 0.65 0.20 35;
+        --chart-2: 0.70 0.15 50;
+        --chart-3: 0.60 0.18 25;
+        --chart-4: 0.75 0.12 60;
+        --chart-5: 0.55 0.22 40;
+    }
+
+    .dark {
+        --background: 0.15 0.015 40;
+        --foreground: 0.95 0.005 40;
+        
+        --card: 0.20 0.02 40;
+        --card-foreground: 0.95 0.005 40;
+        
+        --popover: 0.18 0.02 40;
+        --popover-foreground: 0.95 0.005 40;
+        
+        /* Primary: Lighter terracotta for dark mode */
+        --primary: 0.70 0.16 35;
+        --primary-foreground: 0.15 0.015 40;
+        
+        --secondary: 0.25 0.02 40;
+        --secondary-foreground: 0.95 0.005 40;
+        
+        --muted: 0.25 0.02 40;
+        --muted-foreground: 0.65 0.01 40;
+        
+        --accent: 0.80 0.14 50;
+        --accent-foreground: 0.15 0.015 40;
+        
+        --destructive: 0.60 0.20 25;
+        --destructive-foreground: 0.95 0.005 40;
+        
+        --border: 0.30 0.02 40;
+        --input: 0.30 0.02 40;
+        --ring: 0.70 0.16 35;
+        
+        --chart-1: 0.70 0.18 35;
+        --chart-2: 0.75 0.14 50;
+        --chart-3: 0.65 0.16 25;
+        --chart-4: 0.80 0.12 60;
+        --chart-5: 0.60 0.20 40;
+    }
+
+    * {
+        @apply border-border;
+    }
+    
+    body {
+        @apply bg-background text-foreground;
+        font-feature-settings: "rlig" 1, "calt" 1;
+    }
+}

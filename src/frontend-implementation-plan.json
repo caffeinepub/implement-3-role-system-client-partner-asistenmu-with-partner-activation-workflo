@@ -1,0 +1,99 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Frontend owner/admin status UI + themed presentation (Internet Identity)",
+  "requirements": [
+    {
+      "id": "REQ-3",
+      "summary": "Integrate frontend UI that reflects backend owner/admin state after Internet Identity login (principal + admin status + first-login owner hint).",
+      "acceptanceCriteria": [
+        "After login, the UI displays the connected principal and the 'Admin/Owner' status based on backend data.",
+        "If the owner/admin is uninitialized, the UI communicates that the first authenticated user becomes the owner/admin (based on backend state).",
+        "The UI does not rely on client-only logic for admin status; it reflects backend results."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/backend.d.ts",
+          "operation": "modify",
+          "description": "Extend the typed backend interface to include owner/admin pattern reads needed by the UI (e.g., a method returning the current owner/admin as an Option and an init/read pathway if provided by backend). Keep existing methods (including isCallerAdmin) intact so UI can reflect backend truth."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminOwnerStatus.ts",
+          "operation": "create",
+          "description": "Add a React Query hook that reads admin/owner-related backend state using the actor (e.g., isCallerAdmin plus owner/admin Option if available) and exposes loading/error states for the UI. Use the selected 'authorization' component guidance for handling authorization errors gracefully—verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/AuthButton.tsx",
+          "operation": "create",
+          "description": "Create a login/logout button component that uses the existing Internet Identity flow (useInternetIdentity) and clears cached queries on logout to prevent stale admin/owner status. Use the selected 'authorization' component guidance for login/logout and cache clearing—verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/AdminOwnerStatusCard.tsx",
+          "operation": "create",
+          "description": "Create a status card component that, after authentication, shows: connected principal string, whether the backend considers the caller admin (isCallerAdmin), the stored owner/admin principal if present, and a clear message when owner/admin is uninitialized that the first authenticated user will become owner/admin. Use the selected 'authorization' component guidance for Access Control UI and error handling—verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "create",
+          "description": "Add the main app view wiring: render AuthButton and AdminOwnerStatusCard; ensure the status card is only shown when authenticated (or shows a login prompt otherwise), and that all displayed admin status comes from backend calls (not client-side inference). Use the selected 'authorization' component guidance for authenticated data visibility—verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Gate any admin-only UI actions by backend authorization and handle backend rejections clearly in the UI.",
+      "acceptanceCriteria": [
+        "When a non-owner calls an admin-only backend method, the call is rejected by the backend.",
+        "When the owner calls the same method, it succeeds.",
+        "Frontend behavior (hide/disable) matches backend authorization but does not replace it."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/AdminOnlyActions.tsx",
+          "operation": "create",
+          "description": "Add a small admin-only action panel for demonstration that calls an admin-guarded backend method (e.g., role assignment) and surfaces success/error states. Hide/disable the control when isCallerAdmin is false, but still attempt the backend call only through user interaction and display the backend authorization error message if rejected. Use the selected 'authorization' component guidance for Access Control UI and error handling—verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/AdminOwnerStatusCard.tsx",
+          "operation": "modify",
+          "description": "Wire the AdminOnlyActions panel into the status UI and pass backend-derived isCallerAdmin plus actor/identity dependencies; ensure UI gating reflects backend state while still handling backend rejection errors. Use the selected 'authorization' component guidance for error handling—verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Ensure the admin-only actions section is reachable from the main UI (no orphan components) and that unauthorized users see the control as disabled/hidden with a clear explanation while backend remains authoritative. Use the selected 'authorization' component guidance—verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Apply a consistent creative visual theme across the admin/owner status UI (avoid blue/purple as primary).",
+      "acceptanceCriteria": [
+        "The app uses a consistent theme (primary/secondary colors, typography scale, and spacing) across the relevant screens/components.",
+        "Primary styling does not use blue/purple as the main brand color."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/index.css",
+          "operation": "create",
+          "description": "Create the CSS file imported by frontend/src/main.tsx to define the app's global theme tokens and base styles using the existing Tailwind + CSS variable approach. Choose a non-blue/purple primary (e.g., warm amber/terracotta or forest/emerald) and apply consistent typography/spacing defaults for the admin/owner UI."
+        },
+        {
+          "path": "frontend/tailwind.config.js",
+          "operation": "modify",
+          "description": "Adjust Tailwind theme extensions only as needed to support the chosen non-blue/purple brand theme (e.g., ensuring primary/secondary tokens map cleanly to the CSS variables) and keep styling consistent across components."
+        },
+        {
+          "path": "frontend/src/components/AdminOwnerStatusCard.tsx",
+          "operation": "modify",
+          "description": "Update component styling (layout, spacing, typography, and state badges) to consistently use the new theme tokens and avoid blue/purple as primary accents."
+        },
+        {
+          "path": "frontend/src/components/AuthButton.tsx",
+          "operation": "modify",
+          "description": "Update the auth button styling to align with the new theme (primary/secondary, hover/focus states, spacing), avoiding blue/purple as the main brand color."
+        }
+      ]
+    }
+  ]
+}

@@ -1,2 +1,3 @@
-# implement-3-role-system-client-partner-asistenmu-with-partner-activation-workflo
-Exported from Caffeine project: Implement 3-role system (Client/Partner/Asistenmu) with Partner activation workflow and Admin dashboard
+## Integrate secure first-login owner/admin pattern (backend-enforced)
+
+To run app build and run docker image: `docker build -t app . docker run -it --network host app`

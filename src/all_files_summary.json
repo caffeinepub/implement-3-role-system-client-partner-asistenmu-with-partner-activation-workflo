@@ -1,0 +1,20 @@
+{
+  "backend/main.mo": "Motoko canister implementing user profile storage with access-control checks for viewing and updating profiles.",
+  "feature_evidence.json": "Feature evidence report mapping features to related frontend files, components, tests, and confidence levels.",
+  "frontend-file-summaries.txt": "Prewritten summaries describing the purpose of each major frontend file.",
+  "frontend/index.css": "Tailwind base and theme definitions using warm OKLCH variables for light and dark modes.",
+  "frontend/index.html": "Basic HTML entry point mounting the React app and loading main.tsx.",
+  "frontend/src/App.tsx": "Main React app handling Internet Identity auth, loading profile and role data, and rendering status UI.",
+  "frontend/src/components/AdminOnlyActions.tsx": "Admin-only UI allowing role assignment with validation and backend-enforced authorization.",
+  "frontend/src/components/AdminOwnerStatusCard.tsx": "Component displaying user profile, principal, and role badges with admin-only controls.",
+  "frontend/src/components/AuthButton.tsx": "Authentication button managing Internet Identity login/logout and query cache resets.",
+  "frontend/src/components/ProfileSetupModal.tsx": "Modal component that collects a user's name and saves their profile via a mutation with loading and validation states.",
+  "frontend/src/hooks/useActor.ts": "Creates and manages a backend actor based on the current Internet Identity, reinitializing and invalidating queries when identity changes.",
+  "frontend/src/hooks/useInternetIdentity.ts": "Provides context and helpers for managing Internet Identity authentication, including login, logout, and identity persistence.",
+  "frontend/src/hooks/useQueries.ts": "Defines React Query hooks for fetching and modifying user profile and role data through the backend actor.",
+  "frontend/src/index.css": "Tailwind base styles with custom warm-themed color variables and dark mode overrides.",
+  "frontend/src/main.tsx": "Initializes the React app with QueryClient and InternetIdentityProvider and renders the root component.",
+  "frontend/src/utils/urlParams.ts": "Utility functions for reading, storing, persisting, and clearing URL and session parameters, including hash-based routing support.",
+  "frontend/tailwind.config.js": "Tailwind configuration extending theme colors, radii, shadows, and animations using custom CSS variables.",
+  "project_state.json": "Tracks project state for implementing a backend‑enforced first-login admin pattern, listing existing features, new feature requests, and architectural notes. Captures requirements for owner initialization, admin checks, and frontend integration."
+}
