@@ -10,18 +10,102 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export type BaseServiceType = { 'fokus' : null } |
+  { 'jaga' : null } |
+  { 'rapi' : null } |
+  { 'tenang' : null };
+export type PartnerStatus = { 'active' : null } |
+  { 'pending' : null };
+export interface ServiceFilter {
+  'status' : [] | [ServiceStatus],
+  'serviceType' : [] | [BaseServiceType],
+  'endDate' : [] | [Time],
+  'minQuantity' : [] | [bigint],
+  'startDate' : [] | [Time],
+}
+export interface ServicePage {
+  'subscriptions' : Array<SubscriptionRecord>,
+  'total' : bigint,
+  'page' : bigint,
+  'pageSize' : bigint,
+}
+export type ServiceStatus = { 'active' : null } |
+  { 'hold' : null } |
+  { 'suspended' : null };
+export interface SubscriptionRecord {
+  'id' : bigint,
+  'status' : ServiceStatus,
+  'client' : Principal,
+  'serviceType' : BaseServiceType,
+  'endDate' : Time,
+  'pricePerService' : bigint,
+  'quantity' : bigint,
+  'asistenmu' : [] | [Principal],
+  'sharedPrincipals' : Array<Principal>,
+  'startDate' : Time,
+}
+export interface SubscriptionSummary {
+  'totalSubscriptions' : bigint,
+  'activeSubscriptions' : bigint,
+  'hasActiveAsistenmu' : boolean,
+}
+export type Time = bigint;
+export interface UserIdentity {
+  'principal' : Principal,
+  'name' : string,
+  'role' : UserRole,
+}
 export interface UserProfile { 'name' : string }
-export type UserRole = { 'admin' : null } |
+export type UserRole = { 'client' : null } |
+  { 'admin' : null } |
+  { 'asistenmu' : null } |
+  { 'partner' : PartnerStatus };
+export type UserRole__1 = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'assignCallerUserRole' : ActorMethod<[Principal, UserRole__1], undefined>,
+  'createSubscription' : ActorMethod<
+    [
+      Principal,
+      BaseServiceType,
+      bigint,
+      bigint,
+      Time,
+      Time,
+      ServiceStatus,
+      [] | [Principal],
+      Array<Principal>,
+    ],
+    SubscriptionRecord
+  >,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
-  'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getCallerUserRole' : ActorMethod<[], UserRole__1>,
+  'getFilteredServices' : ActorMethod<[ServiceFilter, bigint], ServicePage>,
+  'getSubscriptionSummary' : ActorMethod<[], SubscriptionSummary>,
+  'getUserIdentities' : ActorMethod<[Array<Principal>], Array<UserIdentity>>,
+  'getUserIdentity' : ActorMethod<[Principal], [] | [UserIdentity]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'initializeSystem' : ActorMethod<[string], undefined>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'registerClient' : ActorMethod<[string], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'updateSubscription' : ActorMethod<
+    [
+      bigint,
+      Principal,
+      BaseServiceType,
+      bigint,
+      bigint,
+      Time,
+      Time,
+      ServiceStatus,
+      [] | [Principal],
+      Array<Principal>,
+    ],
+    SubscriptionRecord
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

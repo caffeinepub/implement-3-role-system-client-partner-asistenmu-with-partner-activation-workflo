@@ -1,63 +1,608 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
-  "summary": "Integrate a secure admin/owner pattern where the first successful login becomes the permanent admin (owner), enforced on the backend to prevent override.",
+  "projectStateVersion": 44,
+  "summary": "Asistenku admin dashboard will remain standardized with top-level tabs and nested Layanan sub-tabs, and the cross-dashboard Task/Permintaan workflow is being scoped to a simpler MVP: Client submits a request form → routed to the assigned Asistenmu via the client’s active Layanan → AM updates status (Dalam Proses Pengerjaan / Meminta Review Client with optional GDrive link) → Client can request revision (with mandatory revision details) or mark complete (with confirmation), and completed requests appear in both Client and AM “Permintaan Selesai” tabs.",
   "existing_features": [
     {
-      "id": "feature-add-frontend-integration-that-uses-the-existing-internet-identity-flow-to-display-the-current-admin-owner-status-show-the-connected-principal-whether-they-are-the-owner-admin-and-if-uninitialized-indicate-that-the-first-authenticated-user-will-become-the-owner-admin",
-      "title": "Add frontend integration that uses the existing Internet Identity flow to display the current admin/owner status: show the connected principal, whether they are the owner/admin, and (if uninitialized) indicate that the first authenticated user will become the owner/admin.",
+      "id": "IF-1",
+      "title": "Internet Identity authentication context",
+      "synonyms": [
+        "InternetIdentityProvider",
+        "AuthClient integration"
+      ],
+      "description": "Provides an authentication context that initializes and restores an AuthClient session, exposes the current Identity, and offers login/logout actions with status flags and error state.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-2",
+      "title": "Identity-bound canister actor creation",
+      "synonyms": [
+        "useActor",
+        "createActorWithConfig"
+      ],
+      "description": "Creates an anonymous actor when logged out and an identity-bound actor when logged in; on authenticated actor creation it calls the backend access-control initialization method and forces dependent React Query caches to refetch.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-3",
+      "title": "Secret token retrieval from URL hash with session persistence",
+      "synonyms": [
+        "getSecretParameter",
+        "urlParams utilities"
+      ],
+      "description": "Extracts sensitive parameters from the URL hash, stores them in sessionStorage, and removes them from the URL to reduce leakage (used for the admin bootstrap token flow).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-4",
+      "title": "Backend access-control module (RBAC)",
+      "synonyms": [
+        "AccessControl",
+        "admin/user/guest RBAC"
+      ],
+      "description": "Implements caller role tracking with #admin/#user/#guest, first-admin bootstrap via an environment token, admin-only role assignment, and helper permission checks.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-5",
+      "title": "Authorization canister API via mixin",
+      "synonyms": [
+        "MixinAuthorization",
+        "getCallerUserRole"
+      ],
+      "description": "Exposes canister methods to initialize access control using a shared secret, query caller RBAC role, check admin status, and assign roles (admin-only checks enforced in AccessControl).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-6",
+      "title": "Stable user registry (domain roles)",
+      "synonyms": [
+        "users Map",
+        "UserRole/PartnerStatus"
+      ],
+      "description": "Maintains a stable registry of users keyed by Principal with domain role (#client/#partner pending|active/#asistenmu/#admin) and flags like profileComplete and hasServiceHistory.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-7",
+      "title": "One-time system initialization endpoint",
+      "synonyms": [
+        "initializeSystem",
+        "systemInitialized"
+      ],
+      "description": "Provides a one-time backend method to initialize the system and create the first admin user record (guarded by a stable flag).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-8",
+      "title": "Client self-registration (UI + backend call)",
+      "synonyms": [
+        "registerClient",
+        "ClientRegistrationPage"
+      ],
+      "description": "Authenticated users can submit a display name to register as a client; the frontend validates input, calls the backend mutation, and navigates to the client dashboard on success.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-9",
+      "title": "User profile storage and retrieval",
+      "synonyms": [
+        "getCallerUserProfile",
+        "saveCallerUserProfile",
+        "userProfiles Map"
+      ],
+      "description": "Allows authenticated users to fetch and save a simple profile (name). Saving also marks the user's profileComplete flag in the user registry.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-10",
+      "title": "Partner application submission flow",
+      "synonyms": [
+        "applyForPartner",
+        "PartnerApplyPage"
+      ],
+      "description": "Clients can submit a partner application form; the backend enforces eligibility (no profile edits and no service history) and updates the user's domain role to partner(pending).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-11",
+      "title": "Admin pending partner queue and activation",
+      "synonyms": [
+        "getPendingPartners",
+        "activatePartner",
+        "PendingPartnersPanel"
+      ],
+      "description": "Admins can fetch a list of pending partners and activate them, promoting partner status from pending to active. The UI provides a table with activate actions and toast feedback.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-12",
+      "title": "Admin assignment of Asistenmu role",
+      "synonyms": [
+        "assignAsistenmu",
+        "AsistenmuManagementPanel"
+      ],
+      "description": "Admins can assign the Asistenmu domain role to an existing user by Principal ID via a UI form and backend mutation.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-13",
+      "title": "Service history flag tracking",
+      "synonyms": [
+        "recordServiceActivity",
+        "hasServiceHistory"
+      ],
+      "description": "Backend endpoint marks that a user has service history, used to restrict partner application eligibility.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-14",
+      "title": "Admin-only summary statistics endpoint",
+      "synonyms": [
+        "getSummaryStats",
+        "SummaryStats"
+      ],
+      "description": "Provides an admin-only query that returns aggregated counts (clients, partners, asistenmu, partner pending/active) plus placeholder structures for services, tasks, requests, financial overview, and GMV.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-15",
+      "title": "Admin summary dashboard with polling",
+      "synonyms": [
+        "AdminSummaryTab",
+        "refetchInterval"
+      ],
+      "description": "Admin Summary tab displays summary metrics with formatting and error/loading states, backed by a React Query hook polling the backend every 10 seconds.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-16",
+      "title": "Centralized React Query hooks for canister operations",
+      "synonyms": [
+        "useQueries",
+        "query/mutation layer"
+      ],
+      "description": "Typed hooks wrap backend methods for profile fetch/save, client registration, partner application, admin pending partner list/activation, asistenmu assignment, and summary stats with targeted cache invalidation.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-17",
+      "title": "Role-based redirect guard rendered globally",
+      "synonyms": [
+        "RoleRouter",
+        "RootLayout guard"
+      ],
+      "description": "RoleRouter is rendered in the root layout so authenticated users are redirected based on their backend RBAC role (admin→/admin, guest→/register, user→/client) while allowing certain sub-routes.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-18",
+      "title": "Dashboards and pages for core roles",
+      "synonyms": [
+        "ClientDashboardPage",
+        "PartnerDashboardPage",
+        "AsistenmuDashboardPage",
+        "AdminDashboardPage"
+      ],
+      "description": "Provides distinct dashboard pages with consistent header/footer layout, displaying the caller profile and role-specific sections; the admin dashboard includes tabs for summary and management panels.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-19",
+      "title": "Public landing page with CTAs and SEO metadata",
+      "synonyms": [
+        "LandingPage",
+        "frontend/index.html metadata"
+      ],
+      "description": "Public landing page with product messaging and calls to action (login, become a partner). The HTML entry point includes title and meta description for basic SEO.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-20",
+      "title": "UI theming and component system",
+      "synonyms": [
+        "Tailwind",
+        "shadcn/ui",
+        "next-themes"
+      ],
+      "description": "Implements Tailwind + shadcn/ui components with CSS-variable design tokens, warm OKLCH theme values, and dark-mode support via next-themes.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-21",
+      "title": "Authentication button with cache clearing",
+      "synonyms": [
+        "AuthButton"
+      ],
+      "description": "Reusable login/logout button that integrates Internet Identity actions and clears the React Query cache on logout.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-22",
+      "title": "Access denied page",
+      "synonyms": [
+        "AccessDeniedPage"
+      ],
+      "description": "Standalone page displaying an access denied message and navigation back to home.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-23",
+      "title": "Admin Clients tab (search + pagination + summary cards)",
+      "synonyms": [
+        "ClientsTab",
+        "Admin client management"
+      ],
+      "description": "Adds an Admin Dashboard Clients tab that supports searching clients (by identifiers/name), paginated listing (max 10 per page), and top-level summary cards (registered/active/passive) backed by new backend query endpoints.",
       "reqIds": [
-        "REQ-3"
+        "AR-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-ensure-any-admin-only-ui-actions-if-present-or-added-for-demonstration-are-gated-by-backend-authorization-the-ui-may-hide-disable-controls-for-non-admins-but-the-backend-must-still-reject-non-admin-calls-to-admin-only-methods-with-a-clear-error",
-      "title": "Ensure any admin-only UI actions (if present or added for demonstration) are gated by backend authorization: the UI may hide/disable controls for non-admins, but the backend must still reject non-admin calls to admin-only methods with a clear error.",
+      "id": "IF-24",
+      "title": "Backend client listing/query endpoints for admin (search + pagination + counts)",
+      "synonyms": [
+        "getClients",
+        "listClients",
+        "client search API"
+      ],
+      "description": "Backend support for admin client discovery, providing paginated client lists with search by principal/clientId/name and aggregate counts used by the Admin Clients tab summary cards.",
       "reqIds": [
-        "REQ-4"
+        "AR-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-apply-a-coherent-creative-visual-theme-for-the-frontend-colors-typography-spacing-and-component-styling-and-use-it-consistently-across-the-admin-owner-status-ui-avoid-blue-purple-as-primary-brand-colors",
-      "title": "Apply a coherent, creative visual theme for the frontend (colors, typography, spacing, and component styling) and use it consistently across the admin/owner status UI. Avoid blue/purple as primary brand colors.",
+      "id": "IF-25",
+      "title": "Admin Layanan tab (subscription list with search/filter + pagination)",
+      "synonyms": [
+        "LayananTab",
+        "SubscriptionsTable",
+        "Admin services tab"
+      ],
+      "description": "Adds an Admin Dashboard \"Layanan\" tab that lists subscriptions/services with multi-field search and filters (including masa aktif start–end date range), paginates results (max 10/page), and supports selecting an item for editing.",
       "reqIds": [
-        "REQ-5"
+        "AR-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-26",
+      "title": "Subscription management form (create + edit/update) with validations and optional Asistenmu assignment",
+      "synonyms": [
+        "SubscriptionManagementForm",
+        "Manajemen Langganan Client"
+      ],
+      "description": "Admin form to create and edit client subscriptions with validation (client principal existence and client role, service type, quota/price/date/status). Supports optional Asistenmu assignment with principal validation and nickname/name display integration.",
+      "reqIds": [
+        "AR-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-27",
+      "title": "Service sharing management for subscriptions (up to 6 principals)",
+      "synonyms": [
+        "subscription sharing",
+        "shared principals"
+      ],
+      "description": "Allows admins to add/remove up to 6 additional shared Principal IDs to a subscription. Shared principals consume the main client's service quota and the UI displays each shared user's status and name/nickname.",
+      "reqIds": [
+        "AR-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-28",
+      "title": "Backend subscription/service management schema + APIs + migration support",
+      "synonyms": [
+        "subscriptions schema",
+        "layanan backend endpoints",
+        "backend/migration.mo"
+      ],
+      "description": "Implements backend data model, validations, and canister API methods to support subscription CRUD, listing with filters/pagination, optional Asistenmu assignment lookup, and subscription sharing management; includes migration updates for stable persistence across upgrades.",
+      "reqIds": [
+        "AR-1",
+        "AR-2",
+        "AR-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-client-dashboard-ui-for-the-mvp-request-flow-with-these-tabs-1-delegating-request-initial-post-submit-state-2-in-progress-3-client-review-requested-shows-clickable-review-link-when-present-and-shows-ctas-4-revising-please-wait-5-completed-provide-a-create-request-form-with-fields-title-details-optional-deadline-date",
+      "title": "Implement the Client Dashboard UI for the MVP request flow with these tabs: (1) “Delegating Request” (initial post-submit state), (2) “In Progress”, (3) “Client Review Requested” (shows clickable review link when present and shows CTAs), (4) “Revising (Please Wait)”, (5) “Completed”. Provide a “Create Request” form with fields Title, Details, optional Deadline (date).",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-client-side-gating-ux-for-the-create-request-buat-permintaan-cta-disable-the-button-unless-a-the-client-has-at-least-1-subscription-and-b-at-least-1-active-subscription-when-gated-display-the-warning-text-exactly-aktifkan-layanan-terlebih-dahulu-sebelum-membuat-permintaan",
+      "title": "Implement Client-side gating UX for the “Create Request (Buat Permintaan)” CTA: disable the button unless (a) the Client has at least 1 subscription AND (b) at least 1 active subscription. When gated, display the warning text exactly: \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\".",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-asistenmu-dashboard-ui-with-a-tab-new-client-requests-showing-requests-routed-to-that-asistenmu-via-the-client-s-active-subscription-assignment-and-a-status-dropdown-with-exactly-two-options-in-progress-and-request-client-review-when-request-client-review-is-selected-reveal-an-input-field-to-capture-the-google-drive-link-and-persist-it-to-the-backend",
+      "title": "Implement the Asistenmu Dashboard UI with a tab “New Client Requests” showing requests routed to that Asistenmu via the Client’s active subscription assignment, and a status dropdown with exactly two options: “In Progress” and “Request Client Review”. When “Request Client Review” is selected, reveal an input field to capture the Google Drive link and persist it to the backend.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-the-client-client-review-requested-tab-implement-the-two-ctas-1-request-revision-which-reveals-a-mandatory-revision-details-field-and-a-submit-button-submit-revision-request-and-2-complete-which-shows-a-confirmation-dialog-upon-confirming-mark-the-request-completed-and-move-it-to-the-completed-tab-in-both-client-and-asistenmu-dashboards",
+      "title": "In the Client “Client Review Requested” tab, implement the two CTAs: (1) “Request Revision” which reveals a mandatory revision details field and a submit button (“Submit Revision Request”), and (2) “Complete” which shows a confirmation dialog; upon confirming, mark the request completed and move it to the “Completed” tab in both Client and Asistenmu dashboards.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-extend-centralized-react-query-hooks-to-support-all-mvp-request-queries-and-mutations-for-client-and-asistenmu-dashboards-using-the-existing-actor-pattern-ensure-status-changes-invalidate-the-appropriate-query-keys-so-that-requests-move-between-tabs-immediately-after-a-successful-mutation",
+      "title": "Add/extend centralized React Query hooks to support all MVP request queries and mutations for Client and Asistenmu dashboards, using the existing actor pattern. Ensure status changes invalidate the appropriate query keys so that requests move between tabs immediately after a successful mutation.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-router-routes-for-the-client-and-asistenmu-dashboards-e-g-client-and-asistenmu-and-connect-navigation-redirect-behavior-so-authenticated-users-can-reach-their-correct-dashboard-without-editing-immutable-authentication-hook-files",
+      "title": "Add router routes for the Client and Asistenmu dashboards (e.g., /client and /asistenmu) and connect navigation/redirect behavior so authenticated users can reach their correct dashboard without editing immutable authentication hook files.",
+      "reqIds": [
+        "REQ-19"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [
     {
-      "id": "AR-1",
-      "summary": "Integrate secure first-login owner/admin pattern (first login becomes permanent admin; backend-enforced; cannot be overridden)",
+      "id": "AR-5",
+      "summary": "Refine/optimize backend admin client query endpoints (search/pagination/counts) to fully support the Admin Clients tab",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Restore/standardize Admin Dashboard UI layout into the previous tabbed structure for all panels (Summary, Partner pending/registration, Asistenmu creation, Clients, and Layanan) and use the same tab pattern for future admin features",
       "reqIds": [],
       "status": "pending"
     },
     {
-      "id": "AR-2",
-      "summary": "Implement a backend-enforced owner/admin pattern in the single Motoko actor where the first authenticated principal to successfully access the app becomes the permanent owner/admin, and this owner value cannot be overwritten by later logins or any non-owner call.",
+      "id": "AR-7",
+      "summary": "Implement nested sub-tabs inside the Admin Dashboard \"Layanan\" tab and align the overall Admin tab layout/styling to match the user-provided reference image (top tabs for all admin features; Layanan has internal sub-tabs).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Add remaining Admin Dashboard top-level tabs as shown in the reference image; for features not implemented yet, create read-only/placeholder tabs (read mode) to be filled later",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Activate/implement the Admin Dashboard \"Permintaan\" tab (currently read-only) by connecting it to backend data and making it functional",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Define and implement cross-dashboard data model + APIs for \"Permintaan\" so it integrates with Asistenmu, Partner, and Client dashboards before activating the Admin Permintaan tab",
+      "reqIds": [],
+      "status": "blocked"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Define and implement the end-to-end Task/Permintaan/Job workflow (state machine) connecting Client → Asistenmu → Partner, including assignment, acceptance/rejection, QA/review, completion, and revision handling with consistent status mapping across all dashboards",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Implement Partner search/selection for task assignment by Asistenmu (search by partner ID/name/skill, return max 5 per page with pagination) and expose it to the Asistenmu dashboard UX",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Implement Task/Permintaan end-to-end flow across Client ↔ Asistenmu ↔ Partner using dual status model (TaskClientStatus + TaskInternalStatus), dashboard tab groupings, and role-based CTAs/rules as specified (including AM partner search max 5 with pagination and AM task filtering by assigned clients)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Add a backend Task/Request domain model that implements the dual-status state machine exactly as specified (TaskClientStatus + TaskInternalStatus) and persists tasks in canister state without removing or breaking existing users/subscriptions/service logic.",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-3",
-      "summary": "Expose backend APIs needed to support the pattern, including: (1) a read method to return the current owner/admin principal (or an optional/empty value if uninitialized), (2) a read method to return whether the caller is the owner/admin, and (3) an initialization pathway that safely sets owner/admin exactly once (either explicitly via an idempotent init call or implicitly on first protected action).",
+      "id": "AR-15",
+      "summary": "Implement backend APIs and authorization rules for the Task workflow actions (Client creates request, AM assigns/changes partner and updates fields, Partner accepts/rejects, AM marks QA, AM requests client review, Client completes or requests revision, AM sends revision to partner), enforcing that only the allowed roles can perform each action.",
       "reqIds": [
         "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Enforce the core filtering rule: Asistenmu must only be able to list/view/manage tasks for Clients assigned to that Asistenmu via the AM ⇄ Client relationship, not via an assignedAmPrincipal field stored on the task.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Implement Partner search for Asistenmu task assignment: search by partner ID, name, or skill; return a maximum of 5 results per page with pagination metadata, and provide a backend endpoint that supports this query efficiently.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Build the Asistenmu Dashboard UI with the required tabs and connect each tab to backend task queries filtered by the specified internal statuses; include CTAs per tab consistent with the workflow (assign partner, change partner after rejection, mark QA, request client review, send revision to partner).",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Build the Partner Dashboard UI with the required tabs and actions: show offered tasks (waiting confirmation), allow accept/reject, show active tasks, and show completed tasks.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Build the Client Dashboard UI with the required status-based tabs and actions: create a new Service Request (creates a task), view tasks by client-facing status, and in the review tab allow the Client to either mark complete or request revision with mandatory revision notes.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "Add/update centralized React Query hooks for all Task workflow queries and mutations (Client/Asistenmu/Partner) using the existing actor pattern, and ensure the correct query invalidations so status changes are reflected across dashboards.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Add router support for Client/Asistenmu/Partner dashboards and ensure role-based navigation works end-to-end (users can reach their correct dashboard after authentication), without editing immutable authentication hooks.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Implement simplified MVP Permintaan flow (Client form → AM handling via active Layanan assignment → AM status dropdown: Dalam Proses Pengerjaan / Meminta Review Client with optional GDrive link → Client can Revisi with revision details or Selesai with confirmation → both dashboards show Permintaan Selesai)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Gate Client \"Buat Permintaan\" CTA: only enable/allow request creation if the client has an active Layanan/subscription on their profile",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Add client-side gating UX for \"Buat Permintaan\": disable unless client has at least 1 layanan and an active layanan; show warning text \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\" when gated",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Implement simplified MVP Permintaan flow (Client form → AM handling via active Layanan assignment → AM status dropdown: Dalam Proses Pengerjaan / Meminta Review Client with optional GDrive link → Client can Revisi with revision details or Selesai with confirmation → both dashboards show Permintaan Selesai)",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Gate Client \"Buat Permintaan\" CTA: only enable/allow request creation if the client has an active Layanan/subscription on their profile",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Add client-side gating UX for \"Buat Permintaan\": disable unless client has at least 1 layanan and an active layanan; show warning text \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\" when gated",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Add a new backend domain model for an MVP “Service Request/Permintaan” that supports: (1) Client creates a request (title, details, optional deadline date), (2) Asistenmu updates request state via a dropdown (In Progress / Request Client Review), optionally storing a Google Drive link when requesting review, (3) Client can either request a revision (mandatory revision details) or mark the request complete (with confirmation). Ensure requests persist in canister state without removing or breaking existing users/subscriptions/service logic.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Implement backend assignment resolution so that when a Client creates a request, it is routed to the Asistenmu assigned through the Client’s active Layanan/subscription (not from any field manually set on the request). If the Client has no active subscription with an assigned Asistenmu, the backend must reject request creation with a clear error.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "Add backend APIs (queries + mutations) for the MVP request flow with role-based authorization: Client: create request, list own requests by client-facing tabs, submit revision (with mandatory revision details), mark complete; Asistenmu: list requests assigned via subscriptions, update request status (In Progress / Request Client Review), set/clear review link when requesting review. Enforce that Client actions are only allowed in the review stage, and Asistenmu actions are not allowed after completion.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Add backend endpoints to support Client-side gating of the “Create Request (Buat Permintaan)” CTA by returning the caller’s subscription/service summary, including: total subscription count and active subscription count (and whether an active subscription has an assigned Asistenmu). This must be callable by the Client (not admin-only).",
+      "reqIds": [
+        "REQ-13"
       ],
       "status": "pending"
     }
   ],
   "architectural_notes": [
-    "Implement backend-enforced owner/admin assignment: first successful login sets owner; subsequent logins must not be able to change/overwrite owner role."
+    "Frontend is a React SPA using TanStack Router (route tree in App.tsx) and @tanstack/react-query for data fetching/mutations with cache invalidation.",
+    "Authentication is encapsulated in an InternetIdentityProvider built on @dfinity/auth-client, exposing identity + login/logout + status flags.",
+    "A dedicated useActor hook creates an anonymous vs identity-bound canister actor and (when authenticated) calls a backend access-control initialization method.",
+    "Sensitive bootstrap/admin token is read from the URL hash and persisted in sessionStorage, then removed from the URL (utils/urlParams.ts).",
+    "Backend authorization is separated into an AccessControl module and a MixinAuthorization that exposes authorization-related canister methods.",
+    "Backend domain state is stored in stable Maps for users and userProfiles, plus a stable systemInitialized flag.",
+    "Admin UX is organized as a tabbed admin dashboard with separate panels for partner activation, Asistenmu assignment, and a polled summary tab.",
+    "UI stack uses TailwindCSS + shadcn/ui components, lucide icons, sonner toasts, and next-themes for dark mode.",
+    "Most backend authorization/validation failures use Runtime.trap, surfacing as React Query errors in the UI.",
+    "React Query hooks provide a centralized typed client for backend calls (profiles, registration, partner flow, admin actions, stats)."
   ],
-  "known_issues": [],
+  "known_issues": [
+    "AccessControlState is not stable (not stored in stable vars), so role assignments can reset on canister upgrade/redeploy.",
+    "backend/main.mo registerClient calls AccessControl.assignRole(...,#user), which is admin-only in AccessControl; this will trap for non-admin callers and break client self-registration.",
+    "RoleRouter and useGetUserRole are based on AccessControl roles (#admin/#user/#guest), not the app’s domain roles (#client/#partner/#asistenmu/#admin), so the UI cannot reliably route to /partner or /asistenmu based on actual user role state.",
+    "Because _initializeAccessControlWithSecret is called on login, most authenticated users become AccessControl #user even if they never completed “registration” in the users Map, preventing redirect to /register in many cases.",
+    "useActor always calls _initializeAccessControlWithSecret; MixinAuthorization traps if CAFFEINE_ADMIN_TOKEN env var is missing, potentially breaking all authenticated sessions.",
+    "Partner application form data (companyName/contactEmail/description) is accepted by the backend but is not persisted, so admins cannot review application details beyond the pending user list.",
+    "LandingPage contains a dynamic import of RoleRouter that performs no action; redirects rely on the globally-rendered RoleRouter instead.",
+    "Several UI components are empty placeholders (e.g., AdminOwnerStatusCard.tsx, AdminOnlyActions.tsx, ProfileSetupModal.tsx).",
+    "There are two Tailwind CSS variable entrypoints (frontend/index.css and frontend/src/index.css), which can cause styling drift/confusion; only src/index.css is imported in main.tsx.",
+    "Admin summary stats include many placeholder zeros (serviceCounts/tasks/requests/financial/GMV), so the dashboard appears incomplete until real metrics are implemented."
+  ],
   "isFixRequest": false,
-  "projectName": "Integrate secure first-login owner/admin pattern (backend-enforced)",
-  "clarification_mode": "instant",
+  "gameProjectType": "none",
+  "projectName": "Asistenku",
+  "clarification_mode": "pro",
   "clarification_rounds": 0
 }

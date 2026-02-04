@@ -89,24 +89,96 @@ export class ExternalBlob {
         return this;
     }
 }
+export interface SubscriptionSummary {
+    totalSubscriptions: bigint;
+    activeSubscriptions: bigint;
+    hasActiveAsistenmu: boolean;
+}
+export type Time = bigint;
+export type UserRole = {
+    __kind__: "client";
+    client: null;
+} | {
+    __kind__: "admin";
+    admin: null;
+} | {
+    __kind__: "asistenmu";
+    asistenmu: null;
+} | {
+    __kind__: "partner";
+    partner: PartnerStatus;
+};
+export interface UserIdentity {
+    principal: Principal;
+    name: string;
+    role: UserRole;
+}
+export interface SubscriptionRecord {
+    id: bigint;
+    status: ServiceStatus;
+    client: Principal;
+    serviceType: BaseServiceType;
+    endDate: Time;
+    pricePerService: bigint;
+    quantity: bigint;
+    asistenmu?: Principal;
+    sharedPrincipals: Array<Principal>;
+    startDate: Time;
+}
+export interface ServicePage {
+    subscriptions: Array<SubscriptionRecord>;
+    total: bigint;
+    page: bigint;
+    pageSize: bigint;
+}
+export interface ServiceFilter {
+    status?: ServiceStatus;
+    serviceType?: BaseServiceType;
+    endDate?: Time;
+    minQuantity?: bigint;
+    startDate?: Time;
+}
 export interface UserProfile {
     name: string;
 }
-export enum UserRole {
+export enum BaseServiceType {
+    fokus = "fokus",
+    jaga = "jaga",
+    rapi = "rapi",
+    tenang = "tenang"
+}
+export enum PartnerStatus {
+    active = "active",
+    pending = "pending"
+}
+export enum ServiceStatus {
+    active = "active",
+    hold = "hold",
+    suspended = "suspended"
+}
+export enum UserRole__1 {
     admin = "admin",
     user = "user",
     guest = "guest"
 }
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
-    assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    assignCallerUserRole(user: Principal, role: UserRole__1): Promise<void>;
+    createSubscription(client: Principal, serviceType: BaseServiceType, quantity: bigint, pricePerService: bigint, startDate: Time, endDate: Time, status: ServiceStatus, asistenmu: Principal | null, sharedPrincipals: Array<Principal>): Promise<SubscriptionRecord>;
     getCallerUserProfile(): Promise<UserProfile | null>;
-    getCallerUserRole(): Promise<UserRole>;
+    getCallerUserRole(): Promise<UserRole__1>;
+    getFilteredServices(filter: ServiceFilter, page: bigint): Promise<ServicePage>;
+    getSubscriptionSummary(): Promise<SubscriptionSummary>;
+    getUserIdentities(principals: Array<Principal>): Promise<Array<UserIdentity>>;
+    getUserIdentity(principal: Principal): Promise<UserIdentity | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    initializeSystem(adminName: string): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
+    registerClient(name: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    updateSubscription(id: bigint, client: Principal, serviceType: BaseServiceType, quantity: bigint, pricePerService: bigint, startDate: Time, endDate: Time, status: ServiceStatus, asistenmu: Principal | null, sharedPrincipals: Array<Principal>): Promise<SubscriptionRecord>;
 }
-import type { UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { BaseServiceType as _BaseServiceType, PartnerStatus as _PartnerStatus, ServiceFilter as _ServiceFilter, ServicePage as _ServicePage, ServiceStatus as _ServiceStatus, SubscriptionRecord as _SubscriptionRecord, Time as _Time, UserIdentity as _UserIdentity, UserProfile as _UserProfile, UserRole as _UserRole, UserRole__1 as _UserRole__1 } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -123,60 +195,144 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
+    async assignCallerUserRole(arg0: Principal, arg1: UserRole__1): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole__1_n1(this._uploadFile, this._downloadFile, arg1));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole__1_n1(this._uploadFile, this._downloadFile, arg1));
             return result;
+        }
+    }
+    async createSubscription(arg0: Principal, arg1: BaseServiceType, arg2: bigint, arg3: bigint, arg4: Time, arg5: Time, arg6: ServiceStatus, arg7: Principal | null, arg8: Array<Principal>): Promise<SubscriptionRecord> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createSubscription(arg0, to_candid_BaseServiceType_n3(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4, arg5, to_candid_ServiceStatus_n5(this._uploadFile, this._downloadFile, arg6), to_candid_opt_n7(this._uploadFile, this._downloadFile, arg7), arg8);
+                return from_candid_SubscriptionRecord_n8(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createSubscription(arg0, to_candid_BaseServiceType_n3(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4, arg5, to_candid_ServiceStatus_n5(this._uploadFile, this._downloadFile, arg6), to_candid_opt_n7(this._uploadFile, this._downloadFile, arg7), arg8);
+            return from_candid_SubscriptionRecord_n8(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n15(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n15(this._uploadFile, this._downloadFile, result);
         }
     }
-    async getCallerUserRole(): Promise<UserRole> {
+    async getCallerUserRole(): Promise<UserRole__1> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n4(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole__1_n16(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n4(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole__1_n16(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getFilteredServices(arg0: ServiceFilter, arg1: bigint): Promise<ServicePage> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getFilteredServices(to_candid_ServiceFilter_n18(this._uploadFile, this._downloadFile, arg0), arg1);
+                return from_candid_ServicePage_n20(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getFilteredServices(to_candid_ServiceFilter_n18(this._uploadFile, this._downloadFile, arg0), arg1);
+            return from_candid_ServicePage_n20(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getSubscriptionSummary(): Promise<SubscriptionSummary> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getSubscriptionSummary();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getSubscriptionSummary();
+            return result;
+        }
+    }
+    async getUserIdentities(arg0: Array<Principal>): Promise<Array<UserIdentity>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getUserIdentities(arg0);
+                return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getUserIdentities(arg0);
+            return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getUserIdentity(arg0: Principal): Promise<UserIdentity | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getUserIdentity(arg0);
+                return from_candid_opt_n30(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getUserIdentity(arg0);
+            return from_candid_opt_n30(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n15(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n15(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async initializeSystem(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.initializeSystem(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.initializeSystem(arg0);
+            return result;
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -190,6 +346,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
+            return result;
+        }
+    }
+    async registerClient(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.registerClient(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.registerClient(arg0);
             return result;
         }
     }
@@ -207,38 +377,283 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async updateSubscription(arg0: bigint, arg1: Principal, arg2: BaseServiceType, arg3: bigint, arg4: bigint, arg5: Time, arg6: Time, arg7: ServiceStatus, arg8: Principal | null, arg9: Array<Principal>): Promise<SubscriptionRecord> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateSubscription(arg0, arg1, to_candid_BaseServiceType_n3(this._uploadFile, this._downloadFile, arg2), arg3, arg4, arg5, arg6, to_candid_ServiceStatus_n5(this._uploadFile, this._downloadFile, arg7), to_candid_opt_n7(this._uploadFile, this._downloadFile, arg8), arg9);
+                return from_candid_SubscriptionRecord_n8(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateSubscription(arg0, arg1, to_candid_BaseServiceType_n3(this._uploadFile, this._downloadFile, arg2), arg3, arg4, arg5, arg6, to_candid_ServiceStatus_n5(this._uploadFile, this._downloadFile, arg7), to_candid_opt_n7(this._uploadFile, this._downloadFile, arg8), arg9);
+            return from_candid_SubscriptionRecord_n8(this._uploadFile, this._downloadFile, result);
+        }
+    }
 }
-function from_candid_UserRole_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n5(_uploadFile, _downloadFile, value);
+function from_candid_BaseServiceType_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _BaseServiceType): BaseServiceType {
+    return from_candid_variant_n13(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+function from_candid_PartnerStatus_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PartnerStatus): PartnerStatus {
+    return from_candid_variant_n29(_uploadFile, _downloadFile, value);
+}
+function from_candid_ServicePage_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ServicePage): ServicePage {
+    return from_candid_record_n21(_uploadFile, _downloadFile, value);
+}
+function from_candid_ServiceStatus_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ServiceStatus): ServiceStatus {
+    return from_candid_variant_n11(_uploadFile, _downloadFile, value);
+}
+function from_candid_SubscriptionRecord_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _SubscriptionRecord): SubscriptionRecord {
+    return from_candid_record_n9(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserIdentity_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserIdentity): UserIdentity {
+    return from_candid_record_n25(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole__1_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole__1): UserRole__1 {
+    return from_candid_variant_n17(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n27(_uploadFile, _downloadFile, value);
+}
+function from_candid_opt_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [Principal]): Principal | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_opt_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserIdentity]): UserIdentity | null {
+    return value.length === 0 ? null : from_candid_UserIdentity_n24(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    subscriptions: Array<_SubscriptionRecord>;
+    total: bigint;
+    page: bigint;
+    pageSize: bigint;
+}): {
+    subscriptions: Array<SubscriptionRecord>;
+    total: bigint;
+    page: bigint;
+    pageSize: bigint;
+} {
+    return {
+        subscriptions: from_candid_vec_n22(_uploadFile, _downloadFile, value.subscriptions),
+        total: value.total,
+        page: value.page,
+        pageSize: value.pageSize
+    };
+}
+function from_candid_record_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    principal: Principal;
+    name: string;
+    role: _UserRole;
+}): {
+    principal: Principal;
+    name: string;
+    role: UserRole;
+} {
+    return {
+        principal: value.principal,
+        name: value.name,
+        role: from_candid_UserRole_n26(_uploadFile, _downloadFile, value.role)
+    };
+}
+function from_candid_record_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    id: bigint;
+    status: _ServiceStatus;
+    client: Principal;
+    serviceType: _BaseServiceType;
+    endDate: _Time;
+    pricePerService: bigint;
+    quantity: bigint;
+    asistenmu: [] | [Principal];
+    sharedPrincipals: Array<Principal>;
+    startDate: _Time;
+}): {
+    id: bigint;
+    status: ServiceStatus;
+    client: Principal;
+    serviceType: BaseServiceType;
+    endDate: Time;
+    pricePerService: bigint;
+    quantity: bigint;
+    asistenmu?: Principal;
+    sharedPrincipals: Array<Principal>;
+    startDate: Time;
+} {
+    return {
+        id: value.id,
+        status: from_candid_ServiceStatus_n10(_uploadFile, _downloadFile, value.status),
+        client: value.client,
+        serviceType: from_candid_BaseServiceType_n12(_uploadFile, _downloadFile, value.serviceType),
+        endDate: value.endDate,
+        pricePerService: value.pricePerService,
+        quantity: value.quantity,
+        asistenmu: record_opt_to_undefined(from_candid_opt_n14(_uploadFile, _downloadFile, value.asistenmu)),
+        sharedPrincipals: value.sharedPrincipals,
+        startDate: value.startDate
+    };
+}
+function from_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    active: null;
+} | {
+    hold: null;
+} | {
+    suspended: null;
+}): ServiceStatus {
+    return "active" in value ? ServiceStatus.active : "hold" in value ? ServiceStatus.hold : "suspended" in value ? ServiceStatus.suspended : value;
+}
+function from_candid_variant_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    fokus: null;
+} | {
+    jaga: null;
+} | {
+    rapi: null;
+} | {
+    tenang: null;
+}): BaseServiceType {
+    return "fokus" in value ? BaseServiceType.fokus : "jaga" in value ? BaseServiceType.jaga : "rapi" in value ? BaseServiceType.rapi : "tenang" in value ? BaseServiceType.tenang : value;
+}
+function from_candid_variant_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
 } | {
     guest: null;
-}): UserRole {
-    return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
+}): UserRole__1 {
+    return "admin" in value ? UserRole__1.admin : "user" in value ? UserRole__1.user : "guest" in value ? UserRole__1.guest : value;
 }
-function to_candid_UserRole_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
+function from_candid_variant_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    client: null;
+} | {
+    admin: null;
+} | {
+    asistenmu: null;
+} | {
+    partner: _PartnerStatus;
+}): {
+    __kind__: "client";
+    client: null;
+} | {
+    __kind__: "admin";
+    admin: null;
+} | {
+    __kind__: "asistenmu";
+    asistenmu: null;
+} | {
+    __kind__: "partner";
+    partner: PartnerStatus;
+} {
+    return "client" in value ? {
+        __kind__: "client",
+        client: value.client
+    } : "admin" in value ? {
+        __kind__: "admin",
+        admin: value.admin
+    } : "asistenmu" in value ? {
+        __kind__: "asistenmu",
+        asistenmu: value.asistenmu
+    } : "partner" in value ? {
+        __kind__: "partner",
+        partner: from_candid_PartnerStatus_n28(_uploadFile, _downloadFile, value.partner)
+    } : value;
+}
+function from_candid_variant_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    active: null;
+} | {
+    pending: null;
+}): PartnerStatus {
+    return "active" in value ? PartnerStatus.active : "pending" in value ? PartnerStatus.pending : value;
+}
+function from_candid_vec_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_SubscriptionRecord>): Array<SubscriptionRecord> {
+    return value.map((x)=>from_candid_SubscriptionRecord_n8(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_UserIdentity>): Array<UserIdentity> {
+    return value.map((x)=>from_candid_UserIdentity_n24(_uploadFile, _downloadFile, x));
+}
+function to_candid_BaseServiceType_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: BaseServiceType): _BaseServiceType {
+    return to_candid_variant_n4(_uploadFile, _downloadFile, value);
+}
+function to_candid_ServiceFilter_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ServiceFilter): _ServiceFilter {
+    return to_candid_record_n19(_uploadFile, _downloadFile, value);
+}
+function to_candid_ServiceStatus_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ServiceStatus): _ServiceStatus {
+    return to_candid_variant_n6(_uploadFile, _downloadFile, value);
+}
+function to_candid_UserRole__1_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole__1): _UserRole__1 {
     return to_candid_variant_n2(_uploadFile, _downloadFile, value);
 }
-function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
+function to_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Principal | null): [] | [Principal] {
+    return value === null ? candid_none() : candid_some(value);
+}
+function to_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    status?: ServiceStatus;
+    serviceType?: BaseServiceType;
+    endDate?: Time;
+    minQuantity?: bigint;
+    startDate?: Time;
+}): {
+    status: [] | [_ServiceStatus];
+    serviceType: [] | [_BaseServiceType];
+    endDate: [] | [_Time];
+    minQuantity: [] | [bigint];
+    startDate: [] | [_Time];
+} {
+    return {
+        status: value.status ? candid_some(to_candid_ServiceStatus_n5(_uploadFile, _downloadFile, value.status)) : candid_none(),
+        serviceType: value.serviceType ? candid_some(to_candid_BaseServiceType_n3(_uploadFile, _downloadFile, value.serviceType)) : candid_none(),
+        endDate: value.endDate ? candid_some(value.endDate) : candid_none(),
+        minQuantity: value.minQuantity ? candid_some(value.minQuantity) : candid_none(),
+        startDate: value.startDate ? candid_some(value.startDate) : candid_none()
+    };
+}
+function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole__1): {
     admin: null;
 } | {
     user: null;
 } | {
     guest: null;
 } {
-    return value == UserRole.admin ? {
+    return value == UserRole__1.admin ? {
         admin: null
-    } : value == UserRole.user ? {
+    } : value == UserRole__1.user ? {
         user: null
-    } : value == UserRole.guest ? {
+    } : value == UserRole__1.guest ? {
         guest: null
+    } : value;
+}
+function to_candid_variant_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: BaseServiceType): {
+    fokus: null;
+} | {
+    jaga: null;
+} | {
+    rapi: null;
+} | {
+    tenang: null;
+} {
+    return value == BaseServiceType.fokus ? {
+        fokus: null
+    } : value == BaseServiceType.jaga ? {
+        jaga: null
+    } : value == BaseServiceType.rapi ? {
+        rapi: null
+    } : value == BaseServiceType.tenang ? {
+        tenang: null
+    } : value;
+}
+function to_candid_variant_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ServiceStatus): {
+    active: null;
+} | {
+    hold: null;
+} | {
+    suspended: null;
+} {
+    return value == ServiceStatus.active ? {
+        active: null
+    } : value == ServiceStatus.hold ? {
+        hold: null
+    } : value == ServiceStatus.suspended ? {
+        suspended: null
     } : value;
 }
 export interface CreateActorOptions {

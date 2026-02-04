@@ -1,103 +1,129 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-04T12:30:30.264Z",
-  "summary": "The diff adds a frontend UI/theme and various auth/role/profile hooks/components, but the backend Motoko actor does not implement the requested first-login permanent owner/admin pattern or the required owner/admin APIs. Several frontend calls reference backend methods that are not present in the added backend/main.mo. The diff also introduces an unrequested role/permissions system with secret-token initialization.",
+  "generatedAt": "2026-02-04T20:58:09.533Z",
+  "summary": "Diff adds substantial frontend UI for Client/Asistenmu request tabs and React Query hooks, plus new backend type definitions for ServiceRequest/RequestStatus. However, the backend CRUD/query APIs and assignment/authorization logic required for the MVP flow are not evidenced in the diff, and routing/role handling appears to use RBAC roles (admin/user/guest) rather than domain roles (Client/Asistenmu). Several implemented UI/backend-type behaviors also conflict with the spec (e.g., requiring a review link).",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Implement a backend-enforced first-login permanent owner/admin pattern where the first authenticated principal becomes the permanent owner/admin and cannot be overwritten, and enforce owner checks in backend methods.",
-      "reason": "backend/main.mo contains no stable owner/admin principal storage, no 'set exactly once' logic tied to first authenticated access, and no explicit owner/admin enforcement based on a stored owner value. Authorization instead appears delegated to AccessControl/permissions without showing the required first-login owner behavior.",
+      "id": "REQ-10",
+      "requirement": "Backend must implement an MVP Service Request domain model with persisted fields (requestId, clientPrincipal, assignedAsistenmuPrincipal derived, title, details, optional deadline, status, optional reviewLink, optional revisionDetails, createdAt, updatedAt) and enforce the MVP state transitions.",
+      "reason": "Diff shows only type additions and a requests map, but does not show persistence fields for optional reviewLink/revisionDetails as separate optional stored fields, nor any mutation/query logic enforcing transitions.",
       "evidence": [
         "backend/main.mo"
       ]
     },
     {
-      "id": "REQ-2",
-      "requirement": "Expose backend APIs: (1) read current owner/admin principal (optional if unset), (2) read whether caller is owner/admin, and (3) an initialization pathway that sets owner/admin exactly once (idempotent or implicit).",
-      "reason": "No backend methods for 'getOwner', 'isCallerAdmin' (based on stored owner), or any one-time owner initialization pathway are shown in backend/main.mo. Frontend queries call isCallerAdmin(), getCallerUserRole(), assignCallerUserRole(), and _initializeAccessControlWithSecret(), but these are not present in the backend file shown.",
+      "id": "REQ-11",
+      "requirement": "Backend assignment resolution: createRequest routes to Asistenmu assigned via caller’s active subscription; reject if caller not Client or no active subscription/assigned Asistenmu.",
+      "reason": "No createRequest implementation or subscription-based assignment logic is shown in the backend diff; frontend hooks explicitly note backend CRUD methods are not implemented.",
       "evidence": [
         "backend/main.mo",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/hooks/useActor.ts"
+        "frontend/src/hooks/useRequests.ts"
       ]
     },
     {
-      "id": "REQ-3",
-      "requirement": "Frontend displays connected principal and admin/owner status based on backend state, and if uninitialized indicates first authenticated user becomes owner/admin.",
-      "reason": "While the UI displays principal and an 'Admin / Owner' badge driven by isAdmin, the diff does not show any backend owner state to reflect, nor a UI path that checks/display 'owner uninitialized' messaging based on a backend 'owner is unset' response. The frontend relies on isCallerAdmin() and role queries whose backend counterparts are not shown.",
+      "id": "REQ-12",
+      "requirement": "Backend APIs (queries + mutations) with role-based authorization for Client and Asistenmu actions; enforce stage restrictions (client actions only in review; asistenmu cannot change after completion).",
+      "reason": "No backend endpoints (getClientRequests/getAsistenmuRequests/createRequest/updateRequestStatus) or role checks are evidenced; frontend calls these methods with @ts-ignore and comments stating they are not implemented.",
       "evidence": [
-        "frontend/src/components/AdminOwnerStatusCard.tsx",
-        "frontend/src/hooks/useQueries.ts",
         "backend/main.mo",
+        "frontend/src/hooks/useRequests.ts"
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "requirement": "Backend endpoint callable by Client returning subscription summary (total subscription count, active subscription count, and whether an active subscription has an assigned Asistenmu) for gating the Create Request CTA.",
+      "reason": "ClientDashboardPage consumes a subscription summary hook, but the diff does not show the corresponding backend method being implemented; backend changes shown do not include such an endpoint.",
+      "evidence": [
+        "frontend/src/pages/ClientDashboardPage.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "requirement": "When gated, display the warning text exactly: \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\" and disable Create Request unless totalSubscriptions>0 and activeSubscriptions>0.",
+      "reason": "The diff shows gating logic computation (canCreateRequest) but the truncated file content does not show the exact warning text being rendered, so implementation cannot be confirmed from evidence provided.",
+      "evidence": [
+        "frontend/src/pages/ClientDashboardPage.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "requirement": "Asistenmu status dropdown must have exactly two options labeled “In Progress” and “Request Client Review”; link field appears when requesting review and persists link (link optional unless backend requires).",
+      "reason": "Dropdown has two options but labels are Indonesian (“Dalam Proses Pengerjaan”, “Meminta Review Client”) rather than the exact required strings; additionally, UI requires a non-empty link before requesting review.",
+      "evidence": [
+        "frontend/src/components/requests/AsistenmuRequestCard.tsx"
+      ]
+    },
+    {
+      "id": "REQ-19",
+      "requirement": "Role-based navigation: logged-in user with role Client can navigate to /client; role Asistenmu to /asistenmu, without editing immutable auth hook files.",
+      "reason": "RoleRouter switches on values 'admin'/'user'/'guest' and defaults 'user' to /client with a comment; no routing based on domain roles Client vs Asistenmu is evidenced.",
+      "evidence": [
+        "frontend/src/routes/RoleRouter.tsx",
         "frontend/src/App.tsx"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "Any admin-only UI actions must be gated by backend authorization; backend must reject non-owner calls with a clear error and allow owner calls.",
-      "reason": "An admin-only UI panel (AdminOnlyActions) calls assignCallerUserRole(), but backend/main.mo does not include an admin-only update method for this action (or any owner-only demonstration method) that enforces owner/admin authorization and rejects non-admins.",
-      "evidence": [
-        "frontend/src/components/AdminOnlyActions.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "backend/main.mo"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Role-based access control system with multiple roles (admin/user/guest) and role assignment UI (assignCallerUserRole), which goes beyond a single permanent owner/admin.",
-      "reason": "BuildRequest explicitly states non-goal of RBAC beyond a single permanent owner/admin. The diff introduces UserRole enum usage and a role assignment workflow.",
+      "description": "Asistenmu “Request Client Review” action requires a review link (blocks submission if empty).",
+      "reason": "Spec says storing a Google Drive link is optional; UI enforces it as mandatory via validation.",
       "evidence": [
-        "frontend/src/components/AdminOnlyActions.tsx",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/components/requests/AsistenmuRequestCard.tsx"
       ]
     },
     {
-      "description": "Secret-token-based access-control initialization via URL parameter 'caffeineAdminToken' and a backend method '_initializeAccessControlWithSecret'.",
-      "reason": "The BuildRequest specifies first-login owner/admin pattern using Internet Identity principals; it does not request secret-token initialization or URL-param based admin bootstrap.",
+      "description": "Backend RequestStatus definition makes reviewLink mandatory for clientReviewPending (Text) rather than optional.",
+      "reason": "REQ-10 requires optional reviewLink storage; the shown type forces a link when in review state.",
       "evidence": [
-        "frontend/src/hooks/useActor.ts",
-        "frontend/src/utils/urlParams.ts"
+        "backend/main.mo"
       ]
     },
     {
-      "description": "User profile setup flow (ProfileSetupModal) and profile CRUD methods as a primary feature.",
-      "reason": "The BuildRequest focuses on owner/admin initialization and status display; profile creation/storage is not requested as part of the owner/admin pattern requirements.",
+      "description": "Role-based router appears designed around RBAC roles (admin/user/guest) and includes an Access Denied page/route.",
+      "reason": "REQ-19 requires routing for domain roles Client vs Asistenmu; implementing RBAC-based redirects and an access-denied route/page is additional behavior not requested by the MVP requirements.",
       "evidence": [
-        "frontend/src/components/ProfileSetupModal.tsx",
-        "backend/main.mo",
-        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/routes/RoleRouter.tsx",
+        "frontend/src/pages/AccessDeniedPage.tsx",
         "frontend/src/App.tsx"
       ]
     },
     {
-      "description": "Use of external authorization modules (authorization/MixinAuthorization and authorization/access-control) and permission checks (#user), rather than implementing the explicit owner/admin-first-login pattern in backend/main.mo.",
-      "reason": "The request requires a backend-enforced first-login permanent owner/admin in the single actor; introducing a separate permissions framework is not requested and the required owner APIs are not shown.",
+      "description": "Theme/SEO/UI redesign changes (ThemeProvider usage, warm palette/tailwind tokens, index.html metadata).",
+      "reason": "Not requested by any REQ-10..REQ-19 requirements; constitutes extra scope.",
       "evidence": [
-        "backend/main.mo"
+        "frontend-file-summaries.txt (mentions frontend/src/index.css, frontend/tailwind.config.js, frontend/index.html)",
+        "frontend/src/App.tsx"
+      ]
+    },
+    {
+      "description": "Admin dashboard expanded/standardized with many tabs (Summary, Clients, Services, Partners, Asistenmu, Requests, Audit).",
+      "reason": "Non-goal explicitly says not to activate or redesign Admin “Permintaan” tab unless strictly required; broad admin tabbing work is not requested for the Client↔Asistenmu MVP flow.",
+      "evidence": [
+        "frontend-file-summaries.txt (mentions frontend/src/pages/AdminDashboardPage.tsx)"
       ]
     }
   ],
   "confidence": 0.74,
   "changed_files": [
-    "all_files_summary.json",
     "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/index.css",
-    "frontend/index.html",
     "frontend/src/App.tsx",
-    "frontend/src/components/AdminOnlyActions.tsx",
-    "frontend/src/components/AdminOwnerStatusCard.tsx",
-    "frontend/src/components/AuthButton.tsx",
-    "frontend/src/components/ProfileSetupModal.tsx",
-    "frontend/src/hooks/useActor.ts",
-    "frontend/src/hooks/useInternetIdentity.ts",
+    "frontend/src/components/requests/AsistenmuRequestCard.tsx",
+    "frontend/src/components/requests/AsistenmuRequestsTab.tsx",
+    "frontend/src/components/requests/ClientCreateRequestForm.tsx",
+    "frontend/src/components/requests/ClientRequestTabs.tsx",
+    "frontend/src/components/requests/ClientReviewActions.tsx",
+    "frontend/src/components/requests/RequestListState.tsx",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/index.css",
-    "frontend/src/main.tsx",
-    "frontend/src/utils/urlParams.ts",
-    "frontend/tailwind.config.js",
+    "frontend/src/hooks/useRequests.ts",
+    "frontend/src/pages/AccessDeniedPage.tsx",
+    "frontend/src/pages/AsistenmuDashboardPage.tsx",
+    "frontend/src/pages/ClientDashboardPage.tsx",
+    "frontend/src/pages/LandingPage.tsx",
+    "frontend/src/routes/RoleRouter.tsx",
     "project_state.json"
   ]
 }

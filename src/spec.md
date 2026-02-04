@@ -1,13 +1,16 @@
 # Specification
 
 ## Summary
-**Goal:** Add a backend-enforced first-login owner/admin pattern (single permanent owner) with frontend visibility via Internet Identity, plus a consistent non-blue/non-purple UI theme for the status area.
+**Goal:** Implement an MVP “Service Request/Permintaan” flow so Clients can submit requests tied to their active subscription’s assigned Asistenmu, and both roles can manage the request through a minimal lifecycle.
 
 **Planned changes:**
-- Backend (single Motoko actor): persist an `owner/admin` principal that is set exactly once by the first authenticated caller via a safe initialization pathway, and cannot be overwritten/cleared by non-owner calls or later logins.
-- Backend APIs: add read methods to (1) fetch current owner/admin (optional if uninitialized) and (2) return whether the caller is the owner/admin; add an idempotent initialization call or implicit initialization on first protected action.
-- Backend authorization: enforce owner/admin checks in relevant update methods; reject non-owner calls to admin-only methods with a clear error.
-- Frontend: integrate with existing Internet Identity flow to display connected principal, current owner/admin value (or uninitialized state), and a backend-derived “is owner/admin” status.
-- Frontend UI: apply a coherent creative visual theme (colors/typography/spacing/component styling) across the owner/admin status UI, avoiding blue/purple as primary brand colors.
+- Add a backend Service Request domain model persisted in canister state, including request fields (title/details/deadline), derived Asistenmu assignment, timestamps, status, and optional review link / revision details.
+- Enforce backend assignment resolution from the Client’s active subscription (reject request creation when no active subscription or no assigned Asistenmu).
+- Implement backend query/mutation APIs with role-based authorization for Client (create, list, request revision, complete) and Asistenmu (list assigned, update status, set/clear review link), including valid state transitions.
+- Add a backend endpoint for Clients to query subscription/service summary (total count, active count, and whether an active subscription has an assigned Asistenmu) to gate the “Buat Permintaan” CTA.
+- Build Client Dashboard UI with tabs: Delegating Request, In Progress, Client Review Requested (clickable link + CTAs), Revising (Please Wait), Completed; plus a Create Request form (Title, Details, optional Deadline).
+- Build Asistenmu Dashboard UI with a “New Client Requests” tab showing assigned requests and a status dropdown (In Progress / Request Client Review) that reveals a Google Drive link input when requesting review.
+- Add/extend centralized React Query hooks for all request queries/mutations and invalidate relevant queries so requests move between tabs after actions.
+- Add frontend routes for /client and /asistenmu dashboards and navigation/redirect behavior based on authenticated user role (without modifying immutable auth-related files).
 
-**User-visible outcome:** After signing in, users can see their connected principal and whether they are the permanent owner/admin (based on backend state). On fresh deployments, the UI indicates that the first authenticated user becomes the owner/admin, and any admin-only actions are enforced by the backend (non-owners are rejected).
+**User-visible outcome:** Clients can create a request (only when they have an active subscription), track it across dashboard tabs, open the review link, request a revision with required details, or complete the request with confirmation; Asistenmu can see assigned incoming requests, move them to “In Progress” or “Request Client Review,” and attach a Google Drive link for client review.

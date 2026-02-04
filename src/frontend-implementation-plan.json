@@ -1,97 +1,175 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Frontend owner/admin status UI + themed presentation (Internet Identity)",
+  "title": "MVP Permintaan (Service Request) flow — Client & Asistenmu Dashboards (Frontend)",
   "requirements": [
     {
-      "id": "REQ-3",
-      "summary": "Integrate frontend UI that reflects backend owner/admin state after Internet Identity login (principal + admin status + first-login owner hint).",
+      "id": "REQ-14",
+      "summary": "Implement Client dashboard UI with request tabs and a Create Request form (title, details, optional deadline) backed by React Query loading/error/empty states.",
       "acceptanceCriteria": [
-        "After login, the UI displays the connected principal and the 'Admin/Owner' status based on backend data.",
-        "If the owner/admin is uninitialized, the UI communicates that the first authenticated user becomes the owner/admin (based on backend state).",
-        "The UI does not rely on client-only logic for admin status; it reflects backend results."
+        "Client can submit a request and immediately see it appear in the correct Client tab/state",
+        "In the “Client Review Requested” tab, a review link is rendered as a clickable link when present",
+        "The UI uses React Query hooks for loading/error/empty states per tab"
       ],
       "file_operations": [
+        {
+          "path": "frontend/src/pages/ClientDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Build the Client dashboard page UI with the required tabs: “Delegating Request”, “In Progress”, “Client Review Requested”, “Revising (Please Wait)”, and “Completed”. Use React Query hooks to fetch per-tab lists (or fetch once and filter) and show loading/error/empty states. Render request cards that include title/details/deadline/updated time and conditionally show the review link when present."
+        },
+        {
+          "path": "frontend/src/components/requests/ClientCreateRequestForm.tsx",
+          "operation": "create",
+          "description": "Create a Client “Create Request (Buat Permintaan)” form component with fields Title, Details, and optional Deadline (date input). Wire submit to the create-request mutation hook and ensure the UI reflects mutation loading/error/success."
+        },
+        {
+          "path": "frontend/src/components/requests/ClientRequestTabs.tsx",
+          "operation": "create",
+          "description": "Create a Client dashboard tabs component that renders the five required tab views and composes request list rendering + per-request actions placeholders (with actions fully implemented in REQ-17)."
+        },
+        {
+          "path": "frontend/src/components/requests/RequestListState.tsx",
+          "operation": "create",
+          "description": "Create a small shared UI component for consistent list states (loading skeleton, error message, empty state) used across Client and Asistenmu dashboards."
+        }
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "summary": "Implement Client-side gating for “Create Request (Buat Permintaan)” CTA using subscription summary and show the exact warning message when gated.",
+      "acceptanceCriteria": [
+        "When total subscriptions == 0, Create Request is disabled and the warning text is visible",
+        "When active subscriptions == 0, Create Request is disabled and the warning text is visible",
+        "When there is at least one active subscription, Create Request becomes enabled"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a React Query hook to fetch the caller’s subscription/service summary via the existing actor pattern (e.g., useGetSubscriptionSummary). Use this hook to support gating logic for the Client “Create Request” CTA."
+        },
+        {
+          "path": "frontend/src/components/requests/ClientCreateRequestForm.tsx",
+          "operation": "modify",
+          "description": "Disable the “Buat Permintaan” CTA unless (a) totalSubscriptions > 0 AND (b) activeSubscriptions > 0. When gated, display the warning text exactly: \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\". Ensure the warning is visible whenever the CTA is disabled due to gating."
+        },
+        {
+          "path": "frontend/src/pages/ClientDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Ensure the Client dashboard surfaces the gated CTA state clearly (button disabled + warning text) based on the subscription summary hook results, including correct behavior for loading and error states (do not incorrectly enable the CTA while summary is unknown)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "summary": "Implement Asistenmu dashboard UI with “New Client Requests” tab, two-option status dropdown, and conditional Google Drive link input persisted to backend.",
+      "acceptanceCriteria": [
+        "Asistenmu can see only requests assigned to them through active client subscriptions",
+        "Changing the dropdown to “In Progress” persists and moves the request to the correct state/tab views",
+        "Changing the dropdown to “Request Client Review” requires a link field to appear and saves the link (optional unless explicitly required by backend)"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/AsistenmuDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Build the Asistenmu dashboard page UI with a tab “New Client Requests” that lists assigned requests using React Query hooks. Render each request with a status dropdown containing exactly two options: “In Progress” and “Request Client Review”."
+        },
+        {
+          "path": "frontend/src/components/requests/AsistenmuRequestCard.tsx",
+          "operation": "create",
+          "description": "Create an Asistenmu request card component that shows request summary + the required dropdown. When “Request Client Review” is selected, reveal a Google Drive link input and persist it via the appropriate mutation hook. Hide/disable controls when a request is completed (per backend rules)."
+        },
+        {
+          "path": "frontend/src/components/requests/AsistenmuRequestsTab.tsx",
+          "operation": "create",
+          "description": "Create a tab body component for “New Client Requests” that composes list-state UI and AsistenmuRequestCard rendering, driven by React Query hook results."
+        }
+      ]
+    },
+    {
+      "id": "REQ-17",
+      "summary": "Implement Client “Client Review Requested” tab CTAs: Request Revision (mandatory details) and Complete (confirmation dialog) with immediate tab movement via query invalidation.",
+      "acceptanceCriteria": [
+        "Revision submission is blocked in the UI until revision details are provided",
+        "Complete action always requires an explicit confirm step before mutation is sent",
+        "After completion, both dashboards show the request under “Completed” without requiring a manual refresh (via query invalidation)"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/requests/ClientReviewActions.tsx",
+          "operation": "create",
+          "description": "Create a Client-only actions component for requests in “Client Review Requested” state that renders two CTAs: “Request Revision” (reveals mandatory revision details + “Submit Revision Request” button) and “Complete” (opens a confirmation dialog before sending the complete mutation)."
+        },
+        {
+          "path": "frontend/src/pages/ClientDashboardPage.tsx",
+          "operation": "modify",
+          "description": "In the “Client Review Requested” tab, render ClientReviewActions for each request. Ensure the review link is clickable when present, and ensure revision details are required before enabling submission. Trigger query invalidation so the request moves to “Revising (Please Wait)” or “Completed” without manual refresh."
+        },
+        {
+          "path": "frontend/src/pages/AsistenmuDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Ensure Asistenmu dashboard list queries are invalidated/refetched after Client completes a request so the item moves to “Completed” state views without manual refresh (based on shared query keys and invalidation rules in the request hooks)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-18",
+      "summary": "Add centralized React Query hooks for all MVP request queries and mutations using the existing actor pattern with correct query key invalidation so requests move between tabs immediately.",
+      "acceptanceCriteria": [
+        "All request lists and actions are performed through hooks in the existing hooks pattern (React Query + actor)",
+        "After each mutation (create, status update, request revision, complete), the relevant request list queries refetch and reflect the new state"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useRequests.ts",
+          "operation": "create",
+          "description": "Create a centralized set of React Query hooks for the MVP request flow (Client: create/list/request revision/complete; Asistenmu: list assigned/update status/set or clear review link) using the existing actor pattern. Define stable query keys for client and asistenmu listings and implement mutation success handlers that invalidate/refetch the appropriate keys so items move between tabs immediately."
+        },
         {
           "path": "frontend/src/backend.d.ts",
           "operation": "modify",
-          "description": "Extend the typed backend interface to include owner/admin pattern reads needed by the UI (e.g., a method returning the current owner/admin as an Option and an init/read pathway if provided by backend). Keep existing methods (including isCallerAdmin) intact so UI can reflect backend truth."
+          "description": "Extend the frontend backend type definitions with the MVP request types and actor methods needed by the new request hooks (e.g., request record shape, status union, list + mutation method signatures). Keep changes aligned with the backend interface once available so the frontend compiles cleanly."
         },
         {
-          "path": "frontend/src/hooks/useAdminOwnerStatus.ts",
-          "operation": "create",
-          "description": "Add a React Query hook that reads admin/owner-related backend state using the actor (e.g., isCallerAdmin plus owner/admin Option if available) and exposes loading/error states for the UI. Use the selected 'authorization' component guidance for handling authorization errors gracefully—verify the component's usage instructions before implementing."
+          "path": "frontend/src/pages/ClientDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Refactor the Client dashboard data access to exclusively use the centralized request hooks for queries and mutations (no direct actor calls in the page), ensuring consistent loading/error/empty handling per tab."
         },
         {
-          "path": "frontend/src/components/AuthButton.tsx",
-          "operation": "create",
-          "description": "Create a login/logout button component that uses the existing Internet Identity flow (useInternetIdentity) and clears cached queries on logout to prevent stale admin/owner status. Use the selected 'authorization' component guidance for login/logout and cache clearing—verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/AdminOwnerStatusCard.tsx",
-          "operation": "create",
-          "description": "Create a status card component that, after authentication, shows: connected principal string, whether the backend considers the caller admin (isCallerAdmin), the stored owner/admin principal if present, and a clear message when owner/admin is uninitialized that the first authenticated user will become owner/admin. Use the selected 'authorization' component guidance for Access Control UI and error handling—verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "create",
-          "description": "Add the main app view wiring: render AuthButton and AdminOwnerStatusCard; ensure the status card is only shown when authenticated (or shows a login prompt otherwise), and that all displayed admin status comes from backend calls (not client-side inference). Use the selected 'authorization' component guidance for authenticated data visibility—verify the component's usage instructions before implementing."
+          "path": "frontend/src/pages/AsistenmuDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Refactor the Asistenmu dashboard data access to exclusively use the centralized request hooks for queries and mutations (no direct actor calls in the page), ensuring consistent loading/error/empty handling."
         }
       ]
     },
     {
-      "id": "REQ-4",
-      "summary": "Gate any admin-only UI actions by backend authorization and handle backend rejections clearly in the UI.",
+      "id": "REQ-19",
+      "summary": "Add routes for /client and /asistenmu dashboards and implement role-based navigation/redirect so authenticated users reach the correct dashboard without changing immutable auth hook files.",
       "acceptanceCriteria": [
-        "When a non-owner calls an admin-only backend method, the call is rejected by the backend.",
-        "When the owner calls the same method, it succeeds.",
-        "Frontend behavior (hide/disable) matches backend authorization but does not replace it."
+        "The app has working routes for Client and Asistenmu dashboard pages",
+        "No changes are made to immutable paths (authentication hooks and UI component sources marked read-only)",
+        "A logged-in user with role Client can navigate to the Client dashboard; a user with role Asistenmu can navigate to the Asistenmu dashboard"
       ],
       "file_operations": [
-        {
-          "path": "frontend/src/components/AdminOnlyActions.tsx",
-          "operation": "create",
-          "description": "Add a small admin-only action panel for demonstration that calls an admin-guarded backend method (e.g., role assignment) and surfaces success/error states. Hide/disable the control when isCallerAdmin is false, but still attempt the backend call only through user interaction and display the backend authorization error message if rejected. Use the selected 'authorization' component guidance for Access Control UI and error handling—verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/AdminOwnerStatusCard.tsx",
-          "operation": "modify",
-          "description": "Wire the AdminOnlyActions panel into the status UI and pass backend-derived isCallerAdmin plus actor/identity dependencies; ensure UI gating reflects backend state while still handling backend rejection errors. Use the selected 'authorization' component guidance for error handling—verify the component's usage instructions before implementing."
-        },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Ensure the admin-only actions section is reachable from the main UI (no orphan components) and that unauthorized users see the control as disabled/hidden with a clear explanation while backend remains authoritative. Use the selected 'authorization' component guidance—verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Apply a consistent creative visual theme across the admin/owner status UI (avoid blue/purple as primary).",
-      "acceptanceCriteria": [
-        "The app uses a consistent theme (primary/secondary colors, typography scale, and spacing) across the relevant screens/components.",
-        "Primary styling does not use blue/purple as the main brand color."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/index.css",
-          "operation": "create",
-          "description": "Create the CSS file imported by frontend/src/main.tsx to define the app's global theme tokens and base styles using the existing Tailwind + CSS variable approach. Choose a non-blue/purple primary (e.g., warm amber/terracotta or forest/emerald) and apply consistent typography/spacing defaults for the admin/owner UI."
+          "description": "Register TanStack Router routes for /client and /asistenmu that render ClientDashboardPage and AsistenmuDashboardPage. Also add a lightweight role-based redirect route (e.g., /dashboard) that renders RoleRouter to send authenticated users to the correct dashboard."
         },
         {
-          "path": "frontend/tailwind.config.js",
+          "path": "frontend/src/routes/RoleRouter.tsx",
           "operation": "modify",
-          "description": "Adjust Tailwind theme extensions only as needed to support the chosen non-blue/purple brand theme (e.g., ensuring primary/secondary tokens map cleanly to the CSS variables) and keep styling consistent across components."
+          "description": "Implement role-based routing logic that uses Internet Identity + actor-backed identity/role lookup to redirect authenticated users to /client or /asistenmu (and preserve /admin behavior for admins if applicable). Show an access-denied view for authenticated users without the required role(s), and avoid changing any immutable authentication hook files."
         },
         {
-          "path": "frontend/src/components/AdminOwnerStatusCard.tsx",
+          "path": "frontend/src/pages/LandingPage.tsx",
           "operation": "modify",
-          "description": "Update component styling (layout, spacing, typography, and state badges) to consistently use the new theme tokens and avoid blue/purple as primary accents."
+          "description": "Update the post-login redirect behavior to navigate authenticated users to the role-based redirect route (e.g., /dashboard) instead of always navigating to /admin, ensuring Client/Asistenmu users can reach their dashboards."
         },
         {
-          "path": "frontend/src/components/AuthButton.tsx",
+          "path": "frontend/src/pages/AccessDeniedPage.tsx",
           "operation": "modify",
-          "description": "Update the auth button styling to align with the new theme (primary/secondary, hover/focus states, spacing), avoiding blue/purple as the main brand color."
+          "description": "Implement an Access Denied page UI that can be used by RoleRouter when a user is authenticated but lacks permission for the requested dashboard route."
         }
       ]
     }

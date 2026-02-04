@@ -1,182 +1,165 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-04T12:30:30.301Z",
+  "generatedAt": "2026-02-04T20:58:09.578Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 3,
+    "total": 10,
+    "implemented": 6,
     "items": [
       {
-        "id": "REQ-1",
-        "summary": "Implement a backend-enforced owner/admin pattern in the single Motoko actor where the first authenticated principal to successfully access the app becomes the permanent owner/admin, and this owner value cannot be overwritten by later logins or any non-owner call.",
+        "id": "REQ-10",
+        "summary": "Add a new backend domain model for an MVP “Service Request/Permintaan” that supports: (1) Client creates a request (title, details, optional deadline date), (2) Asistenmu updates request state via a dropdown (In Progress / Request Client Review), optionally storing a Google Drive link when requesting review, (3) Client can either request a revision (mandatory revision details) or mark the request complete (with confirmation). Ensure requests persist in canister state without removing or breaking existing users/subscriptions/service logic.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-2",
-        "summary": "Expose backend APIs needed to support the pattern, including: (1) a read method to return the current owner/admin principal (or an optional/empty value if uninitialized), (2) a read method to return whether the caller is the owner/admin, and (3) an initialization pathway that safely sets owner/admin exactly once (either explicitly via an idempotent init call or implicitly on first protected action).",
+        "id": "REQ-11",
+        "summary": "Implement backend assignment resolution so that when a Client creates a request, it is routed to the Asistenmu assigned through the Client’s active Layanan/subscription (not from any field manually set on the request). If the Client has no active subscription with an assigned Asistenmu, the backend must reject request creation with a clear error.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-3",
-        "summary": "Add frontend integration that uses the existing Internet Identity flow to display the current admin/owner status: show the connected principal, whether they are the owner/admin, and (if uninitialized) indicate that the first authenticated user will become the owner/admin.",
+        "id": "REQ-12",
+        "summary": "Add backend APIs (queries + mutations) for the MVP request flow with role-based authorization: Client: create request, list own requests by client-facing tabs, submit revision (with mandatory revision details), mark complete; Asistenmu: list requests assigned via subscriptions, update request status (In Progress / Request Client Review), set/clear review link when requesting review. Enforce that Client actions are only allowed in the review stage, and Asistenmu actions are not allowed after completion.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-13",
+        "summary": "Add backend endpoints to support Client-side gating of the “Create Request (Buat Permintaan)” CTA by returning the caller’s subscription/service summary, including: total subscription count and active subscription count (and whether an active subscription has an assigned Asistenmu). This must be callable by the Client (not admin-only).",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-14",
+        "summary": "Implement the Client Dashboard UI for the MVP request flow with these tabs: (1) “Delegating Request” (initial post-submit state), (2) “In Progress”, (3) “Client Review Requested” (shows clickable review link when present and shows CTAs), (4) “Revising (Please Wait)”, (5) “Completed”. Provide a “Create Request” form with fields Title, Details, optional Deadline (date).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/backend.d.ts",
-          "frontend/src/hooks/useAdminOwnerStatus.ts",
-          "frontend/src/components/AuthButton.tsx",
-          "frontend/src/components/AdminOwnerStatusCard.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/ClientDashboardPage.tsx",
+          "frontend/src/components/requests/ClientCreateRequestForm.tsx",
+          "frontend/src/components/requests/ClientRequestTabs.tsx",
+          "frontend/src/components/requests/RequestListState.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/backend.d.ts",
-          "frontend/src/components/AuthButton.tsx",
-          "frontend/src/components/AdminOwnerStatusCard.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/ClientDashboardPage.tsx",
+          "frontend/src/components/requests/ClientCreateRequestForm.tsx",
+          "frontend/src/components/requests/ClientRequestTabs.tsx",
+          "frontend/src/components/requests/RequestListState.tsx"
         ]
       },
       {
-        "id": "REQ-4",
-        "summary": "Ensure any admin-only UI actions (if present or added for demonstration) are gated by backend authorization: the UI may hide/disable controls for non-admins, but the backend must still reject non-admin calls to admin-only methods with a clear error.",
+        "id": "REQ-15",
+        "summary": "Implement Client-side gating UX for the “Create Request (Buat Permintaan)” CTA: disable the button unless (a) the Client has at least 1 subscription AND (b) at least 1 active subscription. When gated, display the warning text exactly: \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\".",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/AdminOnlyActions.tsx",
-          "frontend/src/components/AdminOwnerStatusCard.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/requests/ClientCreateRequestForm.tsx",
+          "frontend/src/pages/ClientDashboardPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/AdminOnlyActions.tsx",
-          "frontend/src/components/AdminOwnerStatusCard.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/requests/ClientCreateRequestForm.tsx",
+          "frontend/src/pages/ClientDashboardPage.tsx"
         ]
       },
       {
-        "id": "REQ-5",
-        "summary": "Apply a coherent, creative visual theme for the frontend (colors, typography, spacing, and component styling) and use it consistently across the admin/owner status UI. Avoid blue/purple as primary brand colors.",
+        "id": "REQ-16",
+        "summary": "Implement the Asistenmu Dashboard UI with a tab “New Client Requests” showing requests routed to that Asistenmu via the Client’s active subscription assignment, and a status dropdown with exactly two options: “In Progress” and “Request Client Review”. When “Request Client Review” is selected, reveal an input field to capture the Google Drive link and persist it to the backend.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/index.css",
-          "frontend/tailwind.config.js",
-          "frontend/src/components/AdminOwnerStatusCard.tsx",
-          "frontend/src/components/AuthButton.tsx"
+          "frontend/src/pages/AsistenmuDashboardPage.tsx",
+          "frontend/src/components/requests/AsistenmuRequestCard.tsx",
+          "frontend/src/components/requests/AsistenmuRequestsTab.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/index.css",
-          "frontend/tailwind.config.js",
-          "frontend/src/components/AdminOwnerStatusCard.tsx",
-          "frontend/src/components/AuthButton.tsx"
+          "frontend/src/pages/AsistenmuDashboardPage.tsx",
+          "frontend/src/components/requests/AsistenmuRequestCard.tsx",
+          "frontend/src/components/requests/AsistenmuRequestsTab.tsx"
+        ]
+      },
+      {
+        "id": "REQ-17",
+        "summary": "In the Client “Client Review Requested” tab, implement the two CTAs: (1) “Request Revision” which reveals a mandatory revision details field and a submit button (“Submit Revision Request”), and (2) “Complete” which shows a confirmation dialog; upon confirming, mark the request completed and move it to the “Completed” tab in both Client and Asistenmu dashboards.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/requests/ClientReviewActions.tsx",
+          "frontend/src/pages/ClientDashboardPage.tsx",
+          "frontend/src/pages/AsistenmuDashboardPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/requests/ClientReviewActions.tsx",
+          "frontend/src/pages/ClientDashboardPage.tsx",
+          "frontend/src/pages/AsistenmuDashboardPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-18",
+        "summary": "Add/extend centralized React Query hooks to support all MVP request queries and mutations for Client and Asistenmu dashboards, using the existing actor pattern. Ensure status changes invalidate the appropriate query keys so that requests move between tabs immediately after a successful mutation.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useRequests.ts",
+          "frontend/src/backend.d.ts",
+          "frontend/src/pages/ClientDashboardPage.tsx",
+          "frontend/src/pages/AsistenmuDashboardPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useRequests.ts",
+          "frontend/src/backend.d.ts",
+          "frontend/src/pages/ClientDashboardPage.tsx",
+          "frontend/src/pages/AsistenmuDashboardPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-19",
+        "summary": "Add router routes for the Client and Asistenmu dashboards (e.g., /client and /asistenmu) and connect navigation/redirect behavior so authenticated users can reach their correct dashboard without editing immutable authentication hook files.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/App.tsx",
+          "frontend/src/routes/RoleRouter.tsx",
+          "frontend/src/pages/LandingPage.tsx",
+          "frontend/src/pages/AccessDeniedPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/App.tsx",
+          "frontend/src/routes/RoleRouter.tsx",
+          "frontend/src/pages/LandingPage.tsx",
+          "frontend/src/pages/AccessDeniedPage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/authorization/MixinAuthorization.mo",
-    "backend/authorization/access-control.mo",
     "backend/main.mo",
     "build-request.json",
-    "build-template/Dockerfile",
-    "build-template/LICENSE",
-    "build-template/README.md",
-    "build-template/deploy.sh",
-    "build-template/icp.yaml",
-    "build-template/package.json",
-    "build-template/pnpm-lock.yaml",
-    "build-template/pnpm-workspace.yaml",
-    "build-template/scripts/prune-unused-images.js",
-    "build-template/scripts/resize-images.js",
-    "build-template/src/backend/canister.yaml",
-    "build-template/src/backend/system-idl/aaaaa-aa.did",
-    "build-template/src/frontend/canister.yaml",
-    "build-template/src/frontend/components.json",
-    "build-template/src/frontend/env.json",
-    "build-template/src/frontend/eslint-rules/no-bigint-in-query-keys.js",
-    "build-template/src/frontend/eslint-rules/require-internet-identity-provider.js",
-    "build-template/src/frontend/eslint.config.js",
-    "build-template/src/frontend/package.json",
-    "build-template/src/frontend/postcss.config.js",
-    "build-template/src/frontend/src/components/ui/accordion.tsx",
-    "build-template/src/frontend/src/components/ui/alert-dialog.tsx",
-    "build-template/src/frontend/src/components/ui/alert.tsx",
-    "build-template/src/frontend/src/components/ui/aspect-ratio.tsx",
-    "build-template/src/frontend/src/components/ui/avatar.tsx",
-    "build-template/src/frontend/src/components/ui/badge.tsx",
-    "build-template/src/frontend/src/components/ui/breadcrumb.tsx",
-    "build-template/src/frontend/src/components/ui/button.tsx",
-    "build-template/src/frontend/src/components/ui/calendar.tsx",
-    "build-template/src/frontend/src/components/ui/card.tsx",
-    "build-template/src/frontend/src/components/ui/carousel.tsx",
-    "build-template/src/frontend/src/components/ui/chart.tsx",
-    "build-template/src/frontend/src/components/ui/checkbox.tsx",
-    "build-template/src/frontend/src/components/ui/collapsible.tsx",
-    "build-template/src/frontend/src/components/ui/command.tsx",
-    "build-template/src/frontend/src/components/ui/context-menu.tsx",
-    "build-template/src/frontend/src/components/ui/dialog.tsx",
-    "build-template/src/frontend/src/components/ui/drawer.tsx",
-    "build-template/src/frontend/src/components/ui/dropdown-menu.tsx",
-    "build-template/src/frontend/src/components/ui/form.tsx",
-    "build-template/src/frontend/src/components/ui/hover-card.tsx",
-    "build-template/src/frontend/src/components/ui/input-otp.tsx",
-    "build-template/src/frontend/src/components/ui/input.tsx",
-    "build-template/src/frontend/src/components/ui/label.tsx",
-    "build-template/src/frontend/src/components/ui/menubar.tsx",
-    "build-template/src/frontend/src/components/ui/navigation-menu.tsx",
-    "build-template/src/frontend/src/components/ui/pagination.tsx",
-    "build-template/src/frontend/src/components/ui/popover.tsx",
-    "build-template/src/frontend/src/components/ui/progress.tsx",
-    "build-template/src/frontend/src/components/ui/radio-group.tsx",
-    "build-template/src/frontend/src/components/ui/resizable.tsx",
-    "build-template/src/frontend/src/components/ui/scroll-area.tsx",
-    "build-template/src/frontend/src/components/ui/select.tsx",
-    "build-template/src/frontend/src/components/ui/separator.tsx",
-    "build-template/src/frontend/src/components/ui/sheet.tsx",
-    "build-template/src/frontend/src/components/ui/sidebar.tsx",
-    "build-template/src/frontend/src/components/ui/skeleton.tsx",
-    "build-template/src/frontend/src/components/ui/slider.tsx",
-    "build-template/src/frontend/src/components/ui/sonner.tsx",
-    "build-template/src/frontend/src/components/ui/switch.tsx",
-    "build-template/src/frontend/src/components/ui/table.tsx",
-    "build-template/src/frontend/src/components/ui/tabs.tsx",
-    "build-template/src/frontend/src/components/ui/textarea.tsx",
-    "build-template/src/frontend/src/components/ui/toggle-group.tsx",
-    "build-template/src/frontend/src/components/ui/toggle.tsx",
-    "build-template/src/frontend/src/components/ui/tooltip.tsx",
-    "build-template/src/frontend/src/hooks/use-mobile.tsx",
-    "build-template/src/frontend/src/lib/utils.ts",
-    "build-template/src/frontend/tsconfig.json",
-    "build-template/src/frontend/vite.config.js",
-    "build-template/tsconfig.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/index.css",
-    "frontend/index.html",
     "frontend/src/App.tsx",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/AdminOnlyActions.tsx",
-    "frontend/src/components/AdminOwnerStatusCard.tsx",
-    "frontend/src/components/AuthButton.tsx",
-    "frontend/src/components/ProfileSetupModal.tsx",
-    "frontend/src/config.ts",
+    "frontend/src/components/requests/AsistenmuRequestCard.tsx",
+    "frontend/src/components/requests/AsistenmuRequestsTab.tsx",
+    "frontend/src/components/requests/ClientCreateRequestForm.tsx",
+    "frontend/src/components/requests/ClientRequestTabs.tsx",
+    "frontend/src/components/requests/ClientReviewActions.tsx",
+    "frontend/src/components/requests/RequestListState.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useActor.ts",
-    "frontend/src/hooks/useInternetIdentity.ts",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/index.css",
-    "frontend/src/main.tsx",
-    "frontend/src/ui-summary.json",
-    "frontend/src/utils/StorageClient.ts",
-    "frontend/src/utils/urlParams.ts",
-    "frontend/tailwind.config.js",
+    "frontend/src/hooks/useRequests.ts",
+    "frontend/src/pages/AccessDeniedPage.tsx",
+    "frontend/src/pages/AsistenmuDashboardPage.tsx",
+    "frontend/src/pages/ClientDashboardPage.tsx",
+    "frontend/src/pages/LandingPage.tsx",
+    "frontend/src/routes/RoleRouter.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

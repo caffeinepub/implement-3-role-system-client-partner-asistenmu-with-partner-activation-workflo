@@ -8,49 +8,257 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const UserRole = IDL.Variant({
+export const UserRole__1 = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const BaseServiceType = IDL.Variant({
+  'fokus' : IDL.Null,
+  'jaga' : IDL.Null,
+  'rapi' : IDL.Null,
+  'tenang' : IDL.Null,
+});
+export const Time = IDL.Int;
+export const ServiceStatus = IDL.Variant({
+  'active' : IDL.Null,
+  'hold' : IDL.Null,
+  'suspended' : IDL.Null,
+});
+export const SubscriptionRecord = IDL.Record({
+  'id' : IDL.Nat,
+  'status' : ServiceStatus,
+  'client' : IDL.Principal,
+  'serviceType' : BaseServiceType,
+  'endDate' : Time,
+  'pricePerService' : IDL.Nat,
+  'quantity' : IDL.Nat,
+  'asistenmu' : IDL.Opt(IDL.Principal),
+  'sharedPrincipals' : IDL.Vec(IDL.Principal),
+  'startDate' : Time,
+});
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const ServiceFilter = IDL.Record({
+  'status' : IDL.Opt(ServiceStatus),
+  'serviceType' : IDL.Opt(BaseServiceType),
+  'endDate' : IDL.Opt(Time),
+  'minQuantity' : IDL.Opt(IDL.Nat),
+  'startDate' : IDL.Opt(Time),
+});
+export const ServicePage = IDL.Record({
+  'subscriptions' : IDL.Vec(SubscriptionRecord),
+  'total' : IDL.Nat,
+  'page' : IDL.Nat,
+  'pageSize' : IDL.Nat,
+});
+export const SubscriptionSummary = IDL.Record({
+  'totalSubscriptions' : IDL.Nat,
+  'activeSubscriptions' : IDL.Nat,
+  'hasActiveAsistenmu' : IDL.Bool,
+});
+export const PartnerStatus = IDL.Variant({
+  'active' : IDL.Null,
+  'pending' : IDL.Null,
+});
+export const UserRole = IDL.Variant({
+  'client' : IDL.Null,
+  'admin' : IDL.Null,
+  'asistenmu' : IDL.Null,
+  'partner' : PartnerStatus,
+});
+export const UserIdentity = IDL.Record({
+  'principal' : IDL.Principal,
+  'name' : IDL.Text,
+  'role' : UserRole,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole__1], [], []),
+  'createSubscription' : IDL.Func(
+      [
+        IDL.Principal,
+        BaseServiceType,
+        IDL.Nat,
+        IDL.Nat,
+        Time,
+        Time,
+        ServiceStatus,
+        IDL.Opt(IDL.Principal),
+        IDL.Vec(IDL.Principal),
+      ],
+      [SubscriptionRecord],
+      [],
+    ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
-  'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getCallerUserRole' : IDL.Func([], [UserRole__1], ['query']),
+  'getFilteredServices' : IDL.Func([ServiceFilter, IDL.Nat], [ServicePage], []),
+  'getSubscriptionSummary' : IDL.Func([], [SubscriptionSummary], ['query']),
+  'getUserIdentities' : IDL.Func(
+      [IDL.Vec(IDL.Principal)],
+      [IDL.Vec(UserIdentity)],
+      ['query'],
+    ),
+  'getUserIdentity' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(UserIdentity)],
+      ['query'],
+    ),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'initializeSystem' : IDL.Func([IDL.Text], [], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'registerClient' : IDL.Func([IDL.Text], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'updateSubscription' : IDL.Func(
+      [
+        IDL.Nat,
+        IDL.Principal,
+        BaseServiceType,
+        IDL.Nat,
+        IDL.Nat,
+        Time,
+        Time,
+        ServiceStatus,
+        IDL.Opt(IDL.Principal),
+        IDL.Vec(IDL.Principal),
+      ],
+      [SubscriptionRecord],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  const UserRole = IDL.Variant({
+  const UserRole__1 = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const BaseServiceType = IDL.Variant({
+    'fokus' : IDL.Null,
+    'jaga' : IDL.Null,
+    'rapi' : IDL.Null,
+    'tenang' : IDL.Null,
+  });
+  const Time = IDL.Int;
+  const ServiceStatus = IDL.Variant({
+    'active' : IDL.Null,
+    'hold' : IDL.Null,
+    'suspended' : IDL.Null,
+  });
+  const SubscriptionRecord = IDL.Record({
+    'id' : IDL.Nat,
+    'status' : ServiceStatus,
+    'client' : IDL.Principal,
+    'serviceType' : BaseServiceType,
+    'endDate' : Time,
+    'pricePerService' : IDL.Nat,
+    'quantity' : IDL.Nat,
+    'asistenmu' : IDL.Opt(IDL.Principal),
+    'sharedPrincipals' : IDL.Vec(IDL.Principal),
+    'startDate' : Time,
+  });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const ServiceFilter = IDL.Record({
+    'status' : IDL.Opt(ServiceStatus),
+    'serviceType' : IDL.Opt(BaseServiceType),
+    'endDate' : IDL.Opt(Time),
+    'minQuantity' : IDL.Opt(IDL.Nat),
+    'startDate' : IDL.Opt(Time),
+  });
+  const ServicePage = IDL.Record({
+    'subscriptions' : IDL.Vec(SubscriptionRecord),
+    'total' : IDL.Nat,
+    'page' : IDL.Nat,
+    'pageSize' : IDL.Nat,
+  });
+  const SubscriptionSummary = IDL.Record({
+    'totalSubscriptions' : IDL.Nat,
+    'activeSubscriptions' : IDL.Nat,
+    'hasActiveAsistenmu' : IDL.Bool,
+  });
+  const PartnerStatus = IDL.Variant({
+    'active' : IDL.Null,
+    'pending' : IDL.Null,
+  });
+  const UserRole = IDL.Variant({
+    'client' : IDL.Null,
+    'admin' : IDL.Null,
+    'asistenmu' : IDL.Null,
+    'partner' : PartnerStatus,
+  });
+  const UserIdentity = IDL.Record({
+    'principal' : IDL.Principal,
+    'name' : IDL.Text,
+    'role' : UserRole,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole__1], [], []),
+    'createSubscription' : IDL.Func(
+        [
+          IDL.Principal,
+          BaseServiceType,
+          IDL.Nat,
+          IDL.Nat,
+          Time,
+          Time,
+          ServiceStatus,
+          IDL.Opt(IDL.Principal),
+          IDL.Vec(IDL.Principal),
+        ],
+        [SubscriptionRecord],
+        [],
+      ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
-    'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getCallerUserRole' : IDL.Func([], [UserRole__1], ['query']),
+    'getFilteredServices' : IDL.Func(
+        [ServiceFilter, IDL.Nat],
+        [ServicePage],
+        [],
+      ),
+    'getSubscriptionSummary' : IDL.Func([], [SubscriptionSummary], ['query']),
+    'getUserIdentities' : IDL.Func(
+        [IDL.Vec(IDL.Principal)],
+        [IDL.Vec(UserIdentity)],
+        ['query'],
+      ),
+    'getUserIdentity' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(UserIdentity)],
+        ['query'],
+      ),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'initializeSystem' : IDL.Func([IDL.Text], [], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'registerClient' : IDL.Func([IDL.Text], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'updateSubscription' : IDL.Func(
+        [
+          IDL.Nat,
+          IDL.Principal,
+          BaseServiceType,
+          IDL.Nat,
+          IDL.Nat,
+          Time,
+          Time,
+          ServiceStatus,
+          IDL.Opt(IDL.Principal),
+          IDL.Vec(IDL.Principal),
+        ],
+        [SubscriptionRecord],
+        [],
+      ),
   });
 };
 
