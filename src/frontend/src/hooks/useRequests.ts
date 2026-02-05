@@ -1,17 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useActor } from './useActor';
-
-// Note: These hooks assume backend methods will be implemented
-// The backend currently has the types defined but not the actual CRUD methods
+import { useSafeActor } from './useSafeActor';
+import { useInternetIdentity } from './useInternetIdentity';
+import type { Request, RequestId, RequestInput, PartnerSearchCriteria, PartnerSearchResult } from '../backend';
 
 export function useGetClientRequests() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useSafeActor();
 
   return useQuery({
     queryKey: ['clientRequests'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      // @ts-ignore - Backend method not yet implemented
       return actor.getClientRequests();
     },
     enabled: !!actor && !actorFetching,
@@ -20,13 +18,12 @@ export function useGetClientRequests() {
 }
 
 export function useGetAsistenmuRequests() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useSafeActor();
 
   return useQuery({
     queryKey: ['asistenmuRequests'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      // @ts-ignore - Backend method not yet implemented
       return actor.getAsistenmuRequests();
     },
     enabled: !!actor && !actorFetching,
@@ -34,23 +31,28 @@ export function useGetAsistenmuRequests() {
   });
 }
 
+export function useGetPartnerRequests() {
+  const { actor, isFetching: actorFetching } = useSafeActor();
+
+  return useQuery({
+    queryKey: ['partnerRequests'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getPartnerRequests();
+    },
+    enabled: !!actor && !actorFetching,
+    retry: false,
+  });
+}
+
 export function useCreateRequest() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: {
-      title: string;
-      details: string;
-      deadline: number | null;
-    }) => {
+    mutationFn: async (input: RequestInput) => {
       if (!actor) throw new Error('Actor not available');
-      // @ts-ignore - Backend method not yet implemented
-      return actor.createRequest(
-        params.title,
-        params.details,
-        params.deadline ? BigInt(params.deadline) : null
-      );
+      return actor.createRequest(input);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientRequests'] });
@@ -59,65 +61,141 @@ export function useCreateRequest() {
   });
 }
 
-export function useUpdateRequestStatus() {
-  const { actor } = useActor();
+export function useSearchPartners() {
+  const { actor } = useSafeActor();
+
+  return useMutation({
+    mutationFn: async (criteria: PartnerSearchCriteria) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.searchPartners(criteria);
+    },
+  });
+}
+
+export function useAssignTaskToPartner() {
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (params: {
-      requestId: bigint;
-      status: any;
+      requestId: RequestId;
+      partnerId: string;
+      workBriefing: string;
+      effectiveHours: number;
+      workDeadline: number | null;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      // @ts-ignore - Backend method not yet implemented
-      return actor.updateRequestStatus(params.requestId, params.status);
+      const { Principal } = await import('@dfinity/principal');
+      return actor.assignTaskToPartner(
+        params.requestId,
+        Principal.fromText(params.partnerId),
+        params.workBriefing,
+        BigInt(params.effectiveHours),
+        params.workDeadline ? BigInt(params.workDeadline) : null
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['asistenmuRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['partnerRequests'] });
+    },
+  });
+}
+
+export function useAcceptOffer() {
+  const { actor } = useSafeActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (requestId: RequestId) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.acceptOffer(requestId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['partnerRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['asistenmuRequests'] });
+    },
+  });
+}
+
+export function useRejectOffer() {
+  const { actor } = useSafeActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { requestId: RequestId; reason: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.rejectOffer(params.requestId, params.reason);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['partnerRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['asistenmuRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['partnerProfile'] });
+    },
+  });
+}
+
+export function useRequestQA() {
+  const { actor } = useSafeActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (requestId: RequestId) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.requestQA(requestId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['partnerRequests'] });
       queryClient.invalidateQueries({ queryKey: ['asistenmuRequests'] });
     },
   });
 }
 
 export function useRequestRevision() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: {
-      requestId: bigint;
-      revisionDetails: string;
-    }) => {
+    mutationFn: async (params: { requestId: RequestId; revisionDetails: string }) => {
       if (!actor) throw new Error('Actor not available');
-      // @ts-ignore - Backend method not yet implemented
-      return actor.updateRequestStatus(params.requestId, {
-        __kind__: 'revisionRequested',
-        revisionRequested: { revisionDetails: params.revisionDetails },
-      });
+      return actor.requestRevision(params.requestId, params.revisionDetails);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientRequests'] });
       queryClient.invalidateQueries({ queryKey: ['asistenmuRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['partnerRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['clientRequests'] });
     },
   });
 }
 
-export function useCompleteRequest() {
-  const { actor } = useActor();
+export function useCompleteTask() {
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (requestId: bigint) => {
+    mutationFn: async (params: { requestId: RequestId; finalReport: string }) => {
       if (!actor) throw new Error('Actor not available');
-      // @ts-ignore - Backend method not yet implemented
-      return actor.updateRequestStatus(requestId, {
-        __kind__: 'completed',
-        completed: { completionConfirmation: 'Completed by client' },
-      });
+      return actor.completeTask(params.requestId, params.finalReport);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientRequests'] });
       queryClient.invalidateQueries({ queryKey: ['asistenmuRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['partnerRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['clientRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['partnerProfile'] });
     },
+  });
+}
+
+export function useGetPartnerProfile() {
+  const { actor, isFetching: actorFetching } = useSafeActor();
+  const { identity } = useInternetIdentity();
+
+  return useQuery({
+    queryKey: ['partnerProfile'],
+    queryFn: async () => {
+      if (!actor || !identity) throw new Error('Actor not available');
+      return actor.getPartnerProfile(identity.getPrincipal());
+    },
+    enabled: !!actor && !actorFetching && !!identity,
+    retry: false,
   });
 }

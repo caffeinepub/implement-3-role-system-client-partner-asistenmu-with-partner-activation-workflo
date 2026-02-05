@@ -1,129 +1,80 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-04T20:58:09.533Z",
-  "summary": "Diff adds substantial frontend UI for Client/Asistenmu request tabs and React Query hooks, plus new backend type definitions for ServiceRequest/RequestStatus. However, the backend CRUD/query APIs and assignment/authorization logic required for the MVP flow are not evidenced in the diff, and routing/role handling appears to use RBAC roles (admin/user/guest) rather than domain roles (Client/Asistenmu). Several implemented UI/backend-type behaviors also conflict with the spec (e.g., requiring a review link).",
+  "generatedAt": "2026-02-05T17:59:13.444Z",
+  "summary": "Diff implements a new translucent header utility class and applies it to Landing and several dashboard pages, updates Landing hero headline to a two-line version, and introduces new login button components using the existing Internet Identity hook. However, the diff also includes multiple unrelated UI/theme/routing/page changes that were not requested, and it’s not fully evidenced that *all* “Masuk” login triggers across the app were fixed.",
   "missing_requirements": [
     {
-      "id": "REQ-10",
-      "requirement": "Backend must implement an MVP Service Request domain model with persisted fields (requestId, clientPrincipal, assignedAsistenmuPrincipal derived, title, details, optional deadline, status, optional reviewLink, optional revisionDetails, createdAt, updatedAt) and enforce the MVP state transitions.",
-      "reason": "Diff shows only type additions and a requests map, but does not show persistence fields for optional reviewLink/revisionDetails as separate optional stored fields, nor any mutation/query logic enforcing transitions.",
+      "id": "REQ-119",
+      "requirement": "Reduce the Landing page hero headline font size so each sentence fits on a single line on typical mobile/desktop widths (no unintended wrapping beyond the explicit line break).",
+      "reason": "The headline is updated to two lines via an explicit <br />, but the shown classes remain relatively large (text-3xl md:text-4xl lg:text-5xl). The diff does not show additional measures (e.g., smaller sizes, max-width tuning, balance) to ensure the second sentence does not wrap on typical mobile widths.",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/pages/LandingPage.tsx"
       ]
     },
     {
-      "id": "REQ-11",
-      "requirement": "Backend assignment resolution: createRequest routes to Asistenmu assigned via caller’s active subscription; reject if caller not Client or no active subscription/assigned Asistenmu.",
-      "reason": "No createRequest implementation or subscription-based assignment logic is shown in the backend diff; frontend hooks explicitly note backend CRUD methods are not implemented.",
+      "id": "REQ-120",
+      "requirement": "Fix all \"Masuk\" / login buttons across the app so they correctly trigger the Internet Identity (II) login flow, and ensure login buttons handle logging-in state (disabled/loading) to prevent double-click issues.",
+      "reason": "The diff shows a new MasukButton used on Landing and an updated AuthButton with disabled state during logging-in, but it does not provide evidence that every other login control across the app (any other \"Masuk\" buttons/links) was replaced/wired to the II login flow.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useRequests.ts"
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "requirement": "Backend APIs (queries + mutations) with role-based authorization for Client and Asistenmu actions; enforce stage restrictions (client actions only in review; asistenmu cannot change after completion).",
-      "reason": "No backend endpoints (getClientRequests/getAsistenmuRequests/createRequest/updateRequestStatus) or role checks are evidenced; frontend calls these methods with @ts-ignore and comments stating they are not implemented.",
-      "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useRequests.ts"
-      ]
-    },
-    {
-      "id": "REQ-13",
-      "requirement": "Backend endpoint callable by Client returning subscription summary (total subscription count, active subscription count, and whether an active subscription has an assigned Asistenmu) for gating the Create Request CTA.",
-      "reason": "ClientDashboardPage consumes a subscription summary hook, but the diff does not show the corresponding backend method being implemented; backend changes shown do not include such an endpoint.",
-      "evidence": [
-        "frontend/src/pages/ClientDashboardPage.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-15",
-      "requirement": "When gated, display the warning text exactly: \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\" and disable Create Request unless totalSubscriptions>0 and activeSubscriptions>0.",
-      "reason": "The diff shows gating logic computation (canCreateRequest) but the truncated file content does not show the exact warning text being rendered, so implementation cannot be confirmed from evidence provided.",
-      "evidence": [
-        "frontend/src/pages/ClientDashboardPage.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-16",
-      "requirement": "Asistenmu status dropdown must have exactly two options labeled “In Progress” and “Request Client Review”; link field appears when requesting review and persists link (link optional unless backend requires).",
-      "reason": "Dropdown has two options but labels are Indonesian (“Dalam Proses Pengerjaan”, “Meminta Review Client”) rather than the exact required strings; additionally, UI requires a non-empty link before requesting review.",
-      "evidence": [
-        "frontend/src/components/requests/AsistenmuRequestCard.tsx"
-      ]
-    },
-    {
-      "id": "REQ-19",
-      "requirement": "Role-based navigation: logged-in user with role Client can navigate to /client; role Asistenmu to /asistenmu, without editing immutable auth hook files.",
-      "reason": "RoleRouter switches on values 'admin'/'user'/'guest' and defaults 'user' to /client with a comment; no routing based on domain roles Client vs Asistenmu is evidenced.",
-      "evidence": [
-        "frontend/src/routes/RoleRouter.tsx",
-        "frontend/src/App.tsx"
+        "frontend/src/components/MasukButton.tsx",
+        "frontend/src/components/AuthButton.tsx",
+        "frontend/src/pages/LandingPage.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Asistenmu “Request Client Review” action requires a review link (blocks submission if empty).",
-      "reason": "Spec says storing a Google Drive link is optional; UI enforces it as mandatory via validation.",
+      "description": "Global theme/token overhaul (calm teal OKLCH palette) beyond the requested header translucency styling.",
+      "reason": "BuildRequest only asks to unify translucent white headers and adjust one hero headline; it does not request a global color/theme redesign.",
       "evidence": [
-        "frontend/src/components/requests/AsistenmuRequestCard.tsx"
+        "frontend/src/index.css",
+        "frontend-file-summaries.txt (tailwind.config.js summary)"
       ]
     },
     {
-      "description": "Backend RequestStatus definition makes reviewLink mandatory for clientReviewPending (Text) rather than optional.",
-      "reason": "REQ-10 requires optional reviewLink storage; the shown type forces a link when in review state.",
+      "description": "New route/page for partner application (/bergabung-menjadi-partner) and related UI changes.",
+      "reason": "Explicit constraint: keep existing app routes intact; non-goal: no redesign/new pages beyond header styling and hero headline change.",
       "evidence": [
-        "backend/main.mo"
+        "frontend-file-summaries.txt (App.tsx summary)",
+        "frontend-file-summaries.txt (PartnerApplyPage summary)"
       ]
     },
     {
-      "description": "Role-based router appears designed around RBAC roles (admin/user/guest) and includes an Access Denied page/route.",
-      "reason": "REQ-19 requires routing for domain roles Client vs Asistenmu; implementing RBAC-based redirects and an access-denied route/page is additional behavior not requested by the MVP requirements.",
+      "description": "SEO metadata changes in frontend/index.html (title/description).",
+      "reason": "Not requested by any requirement; outside scope of header styling, hero headline copy, and login triggers.",
       "evidence": [
-        "frontend/src/routes/RoleRouter.tsx",
-        "frontend/src/pages/AccessDeniedPage.tsx",
-        "frontend/src/App.tsx"
+        "frontend-file-summaries.txt (frontend/index.html summary)"
       ]
     },
     {
-      "description": "Theme/SEO/UI redesign changes (ThemeProvider usage, warm palette/tailwind tokens, index.html metadata).",
-      "reason": "Not requested by any REQ-10..REQ-19 requirements; constitutes extra scope.",
+      "description": "RoleRouter and role-based routing behavior changes (new redirects/guards/loading/error styling).",
+      "reason": "BuildRequest explicitly constrains keeping existing app routes and role-based routing behavior intact; diff summary indicates routing component changes beyond just fixing login triggers.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions frontend/src/index.css, frontend/tailwind.config.js, frontend/index.html)",
-        "frontend/src/App.tsx"
+        "frontend-file-summaries.txt (frontend/src/routes/RoleRouter.tsx summary)"
       ]
     },
     {
-      "description": "Admin dashboard expanded/standardized with many tabs (Summary, Clients, Services, Partners, Asistenmu, Requests, Audit).",
-      "reason": "Non-goal explicitly says not to activate or redesign Admin “Permintaan” tab unless strictly required; broad admin tabbing work is not requested for the Client↔Asistenmu MVP flow.",
+      "description": "Admin-only role management UI and references to \"three new backend functions\" (addAdmin/removeAdmin/updateRole) and related profile setup modal.",
+      "reason": "Non-goal: no backend/canister changes required; BuildRequest does not request new admin role-management features or profile setup flows.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions frontend/src/pages/AdminDashboardPage.tsx)"
+        "frontend-file-summaries.txt (AdminOnlyActions summary)",
+        "frontend-file-summaries.txt (ProfileSetupModal summary)",
+        "frontend-file-summaries.txt (useQueries.ts summary)"
       ]
     }
   ],
-  "confidence": 0.74,
+  "confidence": 0.68,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/requests/AsistenmuRequestCard.tsx",
-    "frontend/src/components/requests/AsistenmuRequestsTab.tsx",
-    "frontend/src/components/requests/ClientCreateRequestForm.tsx",
-    "frontend/src/components/requests/ClientRequestTabs.tsx",
-    "frontend/src/components/requests/ClientReviewActions.tsx",
-    "frontend/src/components/requests/RequestListState.tsx",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/hooks/useRequests.ts",
-    "frontend/src/pages/AccessDeniedPage.tsx",
+    "frontend/src/components/AuthButton.tsx",
+    "frontend/src/components/MasukButton.tsx",
+    "frontend/src/index.css",
+    "frontend/src/pages/AdminDashboardPage.tsx",
     "frontend/src/pages/AsistenmuDashboardPage.tsx",
     "frontend/src/pages/ClientDashboardPage.tsx",
     "frontend/src/pages/LandingPage.tsx",
-    "frontend/src/routes/RoleRouter.tsx",
+    "frontend/src/pages/PartnerDashboardPage.tsx",
     "project_state.json"
   ]
 }

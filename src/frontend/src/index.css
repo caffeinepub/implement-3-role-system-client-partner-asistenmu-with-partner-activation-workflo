@@ -4,82 +4,82 @@
 
 @layer base {
     :root {
-        --radius: 0.75rem;
+        --radius: 1rem;
         
-        /* Warm terracotta/amber theme - avoiding blue/purple */
-        --background: 0.98 0.005 40;
-        --foreground: 0.20 0.015 40;
+        /* Calm teal theme */
+        --background: 0.99 0.002 180;
+        --foreground: 0.25 0.015 220;
         
         --card: 1 0 0;
-        --card-foreground: 0.20 0.015 40;
+        --card-foreground: 0.25 0.015 220;
         
         --popover: 1 0 0;
-        --popover-foreground: 0.20 0.015 40;
+        --popover-foreground: 0.25 0.015 220;
         
-        /* Primary: Warm terracotta */
-        --primary: 0.55 0.18 35;
-        --primary-foreground: 0.98 0.005 40;
+        /* Primary: Soft teal */
+        --primary: 0.55 0.12 190;
+        --primary-foreground: 0.99 0.002 180;
         
-        /* Secondary: Soft sand */
-        --secondary: 0.92 0.02 50;
-        --secondary-foreground: 0.25 0.02 40;
+        /* Secondary: Light sand */
+        --secondary: 0.95 0.01 80;
+        --secondary-foreground: 0.30 0.02 220;
         
-        --muted: 0.95 0.01 45;
-        --muted-foreground: 0.50 0.01 40;
+        --muted: 0.96 0.005 180;
+        --muted-foreground: 0.55 0.01 220;
         
-        /* Accent: Warm amber */
-        --accent: 0.75 0.15 60;
-        --accent-foreground: 0.20 0.015 40;
+        /* Accent: Warm teal */
+        --accent: 0.70 0.10 180;
+        --accent-foreground: 0.25 0.015 220;
         
-        --destructive: 0.55 0.22 25;
-        --destructive-foreground: 0.98 0.005 40;
+        --destructive: 0.55 0.20 25;
+        --destructive-foreground: 0.99 0.002 180;
         
-        --border: 0.90 0.01 45;
-        --input: 0.90 0.01 45;
-        --ring: 0.55 0.18 35;
+        --border: 0.92 0.005 220;
+        --input: 0.92 0.005 220;
+        --ring: 0.55 0.12 190;
         
-        --chart-1: 0.65 0.20 35;
-        --chart-2: 0.70 0.15 50;
-        --chart-3: 0.60 0.18 25;
-        --chart-4: 0.75 0.12 60;
-        --chart-5: 0.55 0.22 40;
+        --chart-1: 0.60 0.14 190;
+        --chart-2: 0.65 0.12 180;
+        --chart-3: 0.70 0.10 170;
+        --chart-4: 0.75 0.08 200;
+        --chart-5: 0.50 0.16 185;
     }
 
     .dark {
-        --background: 0.15 0.015 40;
-        --foreground: 0.95 0.005 40;
+        --background: 0.18 0.015 220;
+        --foreground: 0.96 0.005 180;
         
-        --card: 0.20 0.02 40;
-        --card-foreground: 0.95 0.005 40;
+        --card: 0.22 0.02 220;
+        --card-foreground: 0.96 0.005 180;
         
-        --popover: 0.18 0.02 40;
-        --popover-foreground: 0.95 0.005 40;
+        --popover: 0.20 0.02 220;
+        --popover-foreground: 0.96 0.005 180;
         
-        /* Primary: Lighter terracotta for dark mode */
-        --primary: 0.70 0.16 35;
-        --primary-foreground: 0.15 0.015 40;
+        /* Primary: Lighter teal for dark mode */
+        --primary: 0.65 0.14 190;
+        --primary-foreground: 0.18 0.015 220;
         
-        --secondary: 0.25 0.02 40;
-        --secondary-foreground: 0.95 0.005 40;
+        --secondary: 0.28 0.02 220;
+        --secondary-foreground: 0.96 0.005 180;
         
-        --muted: 0.25 0.02 40;
-        --muted-foreground: 0.65 0.01 40;
+        --muted: 0.28 0.02 220;
+        --muted-foreground: 0.70 0.01 180;
         
-        --accent: 0.80 0.14 50;
-        --accent-foreground: 0.15 0.015 40;
+        --accent: 0.75 0.12 180;
+        --accent-foreground: 0.18 0.015 220;
         
-        --destructive: 0.60 0.20 25;
-        --destructive-foreground: 0.95 0.005 40;
+        --destructive: 0.60 0.18 25;
+        --destructive-foreground: 0.96 0.005 180;
         
-        --border: 0.30 0.02 40;
-        --input: 0.30 0.02 40;
-        --ring: 0.70 0.16 35;
+        --border: 0.32 0.02 220;
+        --input: 0.32 0.02 220;
+        --ring: 0.65 0.14 190;
         
-        --chart-1: 0.70 0.18 35;
-        --chart-2: 0.75 0.14 50;
-        --chart-3: 0.65 0.16 25;
-        --chart-4: 0.80 0.12 60;
-        --chart-5: 0.60 0.20 40;
+        --chart-1: 0.65 0.16 190;
+        --chart-2: 0.70 0.14 180;
+        --chart-3: 0.75 0.12 170;
+        --chart-4: 0.80 0.10 200;
+        --chart-5: 0.55 0.18 185;
     }
 
     * {
@@ -89,5 +89,20 @@
     body {
         @apply bg-background text-foreground;
         font-feature-settings: "rlig" 1, "calt" 1;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    }
+}
+
+@layer components {
+    .header-translucent {
+        @apply sticky top-0 z-50;
+        background: oklch(1 0 0 / 0.8);
+        @apply backdrop-blur-md;
+        border-bottom: 1px solid oklch(0.92 0.005 220 / 0.5);
+    }
+    
+    .dark .header-translucent {
+        background: oklch(0.18 0.015 220 / 0.8);
+        border-bottom: 1px solid oklch(0.32 0.02 220 / 0.5);
     }
 }

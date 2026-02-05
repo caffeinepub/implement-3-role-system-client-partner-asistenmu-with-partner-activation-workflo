@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useActor } from './useActor';
-import { UserProfile, UserRole__1, ServiceFilter, UserIdentity } from '../backend';
+import { useSafeActor } from './useSafeActor';
+import { UserProfile, UserRole__1, ServiceFilter, UserIdentity, SubscriptionRecord, UserRole } from '../backend';
 import { Principal } from '@dfinity/principal';
+import { useInternetIdentity } from './useInternetIdentity';
 
 // Get caller's user profile
 export function useGetCallerUserProfile() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useSafeActor();
 
   const query = useQuery<UserProfile | null>({
     queryKey: ['currentUserProfile'],
@@ -26,7 +27,7 @@ export function useGetCallerUserProfile() {
 
 // Save caller's user profile
 export function useSaveCallerUserProfile() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -37,13 +38,14 @@ export function useSaveCallerUserProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
       queryClient.invalidateQueries({ queryKey: ['userRole'] });
+      queryClient.invalidateQueries({ queryKey: ['domainRole'] });
     },
   });
 }
 
 // Register as client
 export function useRegisterClient() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -54,13 +56,14 @@ export function useRegisterClient() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userRole'] });
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['domainRole'] });
     },
   });
 }
 
-// Get user role - now using getCallerUserRole from backend
+// Get user role - AccessControl role (for legacy compatibility)
 export function useGetUserRole() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useSafeActor();
 
   return useQuery<UserRole__1>({
     queryKey: ['userRole'],
@@ -73,9 +76,54 @@ export function useGetUserRole() {
   });
 }
 
+// Get domain role - the actual user role from backend (client/partner/asistenmu/admin)
+export function useGetDomainRole() {
+  const { actor, isFetching: actorFetching } = useSafeActor();
+  const { identity } = useInternetIdentity();
+
+  return useQuery<string | null>({
+    queryKey: ['domainRole'],
+    queryFn: async () => {
+      if (!actor || !identity) return null;
+      
+      try {
+        // Get the caller's identity using their Principal from Internet Identity
+        const callerPrincipal = identity.getPrincipal();
+        const userIdentity = await actor.getUserIdentity(callerPrincipal);
+        
+        if (!userIdentity) return null;
+        
+        // Extract domain role from UserRole variant
+        const role = userIdentity.role;
+        if ('__kind__' in role) {
+          switch (role.__kind__) {
+            case 'admin':
+              return 'admin';
+            case 'client':
+              return 'client';
+            case 'asistenmu':
+              return 'asistenmu';
+            case 'partner':
+              return 'partner';
+            default:
+              return null;
+          }
+        }
+        return null;
+      } catch (error) {
+        console.error('Error fetching domain role:', error);
+        throw error; // Propagate error to React Query error state
+      }
+    },
+    enabled: !!actor && !actorFetching && !!identity,
+    retry: 1,
+    retryDelay: 1000,
+  });
+}
+
 // Get filtered services with pagination (admin only)
 export function useGetFilteredServices(filter: ServiceFilter, page: number) {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useSafeActor();
 
   return useQuery({
     queryKey: ['subscriptions', filter, page],
@@ -90,7 +138,7 @@ export function useGetFilteredServices(filter: ServiceFilter, page: number) {
 
 // Create subscription (admin only)
 export function useCreateSubscription() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -121,13 +169,14 @@ export function useCreateSubscription() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
       queryClient.invalidateQueries({ queryKey: ['subscriptionSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['activeSubscriptions'] });
     },
   });
 }
 
 // Update subscription (admin only)
 export function useUpdateSubscription() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -160,13 +209,14 @@ export function useUpdateSubscription() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
       queryClient.invalidateQueries({ queryKey: ['subscriptionSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['activeSubscriptions'] });
     },
   });
 }
 
 // Get user identity by principal (for validation)
 export function useGetUserIdentity(principalText: string) {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useSafeActor();
 
   return useQuery<UserIdentity | null>({
     queryKey: ['userIdentity', principalText],
@@ -188,7 +238,7 @@ export function useGetUserIdentity(principalText: string) {
 
 // Get multiple user identities (for shared principals)
 export function useGetUserIdentities(principalTexts: string[]) {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useSafeActor();
 
   return useQuery<UserIdentity[]>({
     queryKey: ['userIdentities', principalTexts],
@@ -210,13 +260,28 @@ export function useGetUserIdentities(principalTexts: string[]) {
 
 // Get subscription summary for client
 export function useGetSubscriptionSummary() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useSafeActor();
 
   return useQuery({
     queryKey: ['subscriptionSummary'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
       return actor.getSubscriptionSummary();
+    },
+    enabled: !!actor && !actorFetching,
+    retry: false,
+  });
+}
+
+// Get active subscriptions for caller (client only)
+export function useGetActiveSubscriptionsForCaller() {
+  const { actor, isFetching: actorFetching } = useSafeActor();
+
+  return useQuery<SubscriptionRecord[]>({
+    queryKey: ['activeSubscriptions'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getActiveSubscriptionsForCaller();
     },
     enabled: !!actor && !actorFetching,
     retry: false,

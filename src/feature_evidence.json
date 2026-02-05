@@ -2,119 +2,15 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-implement-the-client-dashboard-ui-for-the-mvp-request-flow-with-these-tabs-1-delegating-request-initial-post-submit-state-2-in-progress-3-client-review-requested-shows-clickable-review-link-when-present-and-shows-ctas-4-revising-please-wait-5-completed-provide-a-create-request-form-with-fields-title-details-optional-deadline-date",
-      "featureTitle": "Implement the Client Dashboard UI for the MVP request flow with these tabs: (1) “Delegating Request” (initial post-submit state), (2) “In Progress”, (3) “Client Review Requested” (shows clickable review link when present and shows CTAs), (4) “Revising (Please Wait)”, (5) “Completed”. Provide a “Create Request” form with fields Title, Details, optional Deadline (date).",
+      "featureId": "feature-update-the-header-styling-on-the-landing-page-and-all-dashboard-pages-admin-client-asistenmu-partner-to-use-a-white-header-with-slight-transparency-a-subtle-bottom-divider-and-a-backdrop-blur-effect-so-underlying-content-remains-visible-while-header-text-stays-readable-during-scroll-avoid-heavy-drop-shadows",
+      "featureTitle": "Update the header styling on the Landing page and all dashboard pages (Admin, Client, Asistenmu, Partner) to use a white header with slight transparency, a subtle bottom divider, and a backdrop blur effect so underlying content remains visible while header text stays readable during scroll. Avoid heavy drop shadows.",
       "files": [
-        "frontend/src/components/requests/ClientCreateRequestForm.tsx",
-        "frontend/src/components/requests/ClientRequestTabs.tsx",
-        "frontend/src/components/requests/RequestListState.tsx",
-        "frontend/src/pages/ClientDashboardPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-14"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-client-side-gating-ux-for-the-create-request-buat-permintaan-cta-disable-the-button-unless-a-the-client-has-at-least-1-subscription-and-b-at-least-1-active-subscription-when-gated-display-the-warning-text-exactly-aktifkan-layanan-terlebih-dahulu-sebelum-membuat-permintaan",
-      "featureTitle": "Implement Client-side gating UX for the “Create Request (Buat Permintaan)” CTA: disable the button unless (a) the Client has at least 1 subscription AND (b) at least 1 active subscription. When gated, display the warning text exactly: \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\".",
-      "files": [
-        "frontend/src/components/requests/ClientCreateRequestForm.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/ClientDashboardPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-15"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-the-asistenmu-dashboard-ui-with-a-tab-new-client-requests-showing-requests-routed-to-that-asistenmu-via-the-client-s-active-subscription-assignment-and-a-status-dropdown-with-exactly-two-options-in-progress-and-request-client-review-when-request-client-review-is-selected-reveal-an-input-field-to-capture-the-google-drive-link-and-persist-it-to-the-backend",
-      "featureTitle": "Implement the Asistenmu Dashboard UI with a tab “New Client Requests” showing requests routed to that Asistenmu via the Client’s active subscription assignment, and a status dropdown with exactly two options: “In Progress” and “Request Client Review”. When “Request Client Review” is selected, reveal an input field to capture the Google Drive link and persist it to the backend.",
-      "files": [
-        "frontend/src/components/requests/AsistenmuRequestCard.tsx",
-        "frontend/src/components/requests/AsistenmuRequestsTab.tsx",
-        "frontend/src/pages/AsistenmuDashboardPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-16"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-in-the-client-client-review-requested-tab-implement-the-two-ctas-1-request-revision-which-reveals-a-mandatory-revision-details-field-and-a-submit-button-submit-revision-request-and-2-complete-which-shows-a-confirmation-dialog-upon-confirming-mark-the-request-completed-and-move-it-to-the-completed-tab-in-both-client-and-asistenmu-dashboards",
-      "featureTitle": "In the Client “Client Review Requested” tab, implement the two CTAs: (1) “Request Revision” which reveals a mandatory revision details field and a submit button (“Submit Revision Request”), and (2) “Complete” which shows a confirmation dialog; upon confirming, mark the request completed and move it to the “Completed” tab in both Client and Asistenmu dashboards.",
-      "files": [
-        "frontend/src/components/requests/ClientReviewActions.tsx",
+        "frontend/src/index.css",
+        "frontend/src/pages/AdminDashboardPage.tsx",
         "frontend/src/pages/AsistenmuDashboardPage.tsx",
-        "frontend/src/pages/ClientDashboardPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-17"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-extend-centralized-react-query-hooks-to-support-all-mvp-request-queries-and-mutations-for-client-and-asistenmu-dashboards-using-the-existing-actor-pattern-ensure-status-changes-invalidate-the-appropriate-query-keys-so-that-requests-move-between-tabs-immediately-after-a-successful-mutation",
-      "featureTitle": "Add/extend centralized React Query hooks to support all MVP request queries and mutations for Client and Asistenmu dashboards, using the existing actor pattern. Ensure status changes invalidate the appropriate query keys so that requests move between tabs immediately after a successful mutation.",
-      "files": [
-        "frontend/src/hooks/useRequests.ts",
-        "frontend/src/pages/AsistenmuDashboardPage.tsx",
-        "frontend/src/pages/ClientDashboardPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-18"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-router-routes-for-the-client-and-asistenmu-dashboards-e-g-client-and-asistenmu-and-connect-navigation-redirect-behavior-so-authenticated-users-can-reach-their-correct-dashboard-without-editing-immutable-authentication-hook-files",
-      "featureTitle": "Add router routes for the Client and Asistenmu dashboards (e.g., /client and /asistenmu) and connect navigation/redirect behavior so authenticated users can reach their correct dashboard without editing immutable authentication hook files.",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/pages/AccessDeniedPage.tsx",
+        "frontend/src/pages/ClientDashboardPage.tsx",
         "frontend/src/pages/LandingPage.tsx",
-        "frontend/src/routes/RoleRouter.tsx"
+        "frontend/src/pages/PartnerDashboardPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -125,7 +21,47 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-19"
+        "REQ-118"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-adjust-the-landing-page-hero-headline-typography-so-it-renders-as-exactly-two-lines-one-sentence-per-line-with-a-smaller-font-size-and-update-the-headline-text-casing-to-match-the-requested-two-line-copy",
+      "featureTitle": "Adjust the Landing page hero headline typography so it renders as exactly two lines (one sentence per line) with a smaller font size, and update the headline text casing to match the requested two-line copy.",
+      "files": [
+        "frontend/src/pages/LandingPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-119"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-fix-all-masuk-login-buttons-across-the-app-so-they-correctly-trigger-the-internet-identity-ii-login-flow-restoring-previous-behavior-using-the-existing-internet-identity-hook-logic-without-editing-immutable-authentication-hook-files",
+      "featureTitle": "Fix all \"Masuk\" / login buttons across the app so they correctly trigger the Internet Identity (II) login flow (restoring previous behavior), using the existing Internet Identity hook/logic without editing immutable authentication hook files.",
+      "files": [
+        "frontend/src/components/AuthButton.tsx",
+        "frontend/src/components/MasukButton.tsx",
+        "frontend/src/pages/LandingPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-120"
       ],
       "confidence": "high"
     }

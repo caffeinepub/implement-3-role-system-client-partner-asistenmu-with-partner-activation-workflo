@@ -14,8 +14,53 @@ export type BaseServiceType = { 'fokus' : null } |
   { 'jaga' : null } |
   { 'rapi' : null } |
   { 'tenang' : null };
+export interface PartnerProfile {
+  'completedTasks' : bigint,
+  'hourlyRate' : bigint,
+  'pendingEarnings' : bigint,
+  'companyName' : string,
+  'rejectedTasks' : bigint,
+  'pendingTasks' : bigint,
+  'skills' : Array<string>,
+}
+export interface PartnerSearchCriteria {
+  'maxHourlyRate' : [] | [bigint],
+  'minHourlyRate' : [] | [bigint],
+  'companyName' : [] | [string],
+  'skills' : [] | [string],
+}
+export interface PartnerSearchResult {
+  'completedTasks' : bigint,
+  'hourlyRate' : bigint,
+  'pendingEarnings' : bigint,
+  'partnerId' : Principal,
+  'companyName' : string,
+  'rejectedTasks' : bigint,
+  'pendingTasks' : bigint,
+  'skills' : Array<string>,
+}
 export type PartnerStatus = { 'active' : null } |
   { 'pending' : null };
+export interface Request {
+  'id' : RequestId,
+  'status' : TaskStatus,
+  'client' : Principal,
+  'title' : string,
+  'createdAt' : Time,
+  'revisionCount' : bigint,
+  'deadline' : [] | [Time],
+  'updatedAt' : Time,
+  'details' : string,
+  'asistenmu' : Principal,
+  'recordStatus' : TaskRecordStatus,
+}
+export type RequestId = bigint;
+export interface RequestInput {
+  'title' : string,
+  'deadline' : [] | [Time],
+  'subscriptionId' : bigint,
+  'details' : string,
+}
 export interface ServiceFilter {
   'status' : [] | [ServiceStatus],
   'serviceType' : [] | [BaseServiceType],
@@ -49,13 +94,54 @@ export interface SubscriptionSummary {
   'activeSubscriptions' : bigint,
   'hasActiveAsistenmu' : boolean,
 }
+export type TaskRecordStatus = { 'active' : null } |
+  { 'completed' : null } |
+  { 'qaRequested' : null } |
+  { 'rejected' : null } |
+  { 'revisionRequested' : null };
+export type TaskStatus = {
+    'assignedAsPartner' : {
+      'effectiveHours' : bigint,
+      'partnerId' : Principal,
+      'workDeadline' : [] | [Time],
+      'workBriefing' : string,
+    }
+  } |
+  { 'rejectedByPartner' : { 'revisionByPartner' : string } } |
+  {
+    'revisionRequestedByAsistenmu' : {
+      'revisionByAsistenmu' : string,
+      'partnerId' : Principal,
+    }
+  } |
+  { 'newlyCreated' : null } |
+  { 'qaRequestedByPartner' : { 'partnerId' : Principal } } |
+  {
+    'offerSentToPartner' : {
+      'effectiveHours' : bigint,
+      'partnerId' : Principal,
+      'workBriefing' : string,
+    }
+  } |
+  {
+    'completedBYPartnerAndAsistenmu' : {
+      'finalReport' : string,
+      'partnerId' : Principal,
+    }
+  } |
+  { 'inProgressByPartner' : { 'partnerId' : Principal } };
 export type Time = bigint;
 export interface UserIdentity {
   'principal' : Principal,
   'name' : string,
   'role' : UserRole,
 }
-export interface UserProfile { 'name' : string }
+export interface UserProfile {
+  'name' : string,
+  'whatsapp' : string,
+  'email' : string,
+  'company' : [] | [string],
+}
 export type UserRole = { 'client' : null } |
   { 'admin' : null } |
   { 'asistenmu' : null } |
@@ -65,7 +151,14 @@ export type UserRole__1 = { 'admin' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'acceptOffer' : ActorMethod<[RequestId], Request>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole__1], undefined>,
+  'assignTaskToPartner' : ActorMethod<
+    [RequestId, Principal, string, bigint, [] | [Time]],
+    Request
+  >,
+  'completeTask' : ActorMethod<[RequestId, string], Request>,
+  'createRequest' : ActorMethod<[RequestInput], Request>,
   'createSubscription' : ActorMethod<
     [
       Principal,
@@ -80,17 +173,36 @@ export interface _SERVICE {
     ],
     SubscriptionRecord
   >,
+  'getActiveSubscriptionsForCaller' : ActorMethod<
+    [],
+    Array<SubscriptionRecord>
+  >,
+  'getAsistenmuRequests' : ActorMethod<[], Array<Request>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole__1>,
+  'getClientRequests' : ActorMethod<[], Array<Request>>,
   'getFilteredServices' : ActorMethod<[ServiceFilter, bigint], ServicePage>,
+  'getPartnerProfile' : ActorMethod<[Principal], [] | [PartnerProfile]>,
+  'getPartnerRequests' : ActorMethod<[], Array<Request>>,
+  'getRequest' : ActorMethod<[RequestId], [] | [Request]>,
   'getSubscriptionSummary' : ActorMethod<[], SubscriptionSummary>,
   'getUserIdentities' : ActorMethod<[Array<Principal>], Array<UserIdentity>>,
   'getUserIdentity' : ActorMethod<[Principal], [] | [UserIdentity]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'initializeSystem' : ActorMethod<[string], undefined>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'registerAsistenmu' : ActorMethod<[Principal, string], undefined>,
   'registerClient' : ActorMethod<[string], undefined>,
+  'registerPartner' : ActorMethod<[string, string], undefined>,
+  'rejectOffer' : ActorMethod<[RequestId, string], Request>,
+  'requestQA' : ActorMethod<[RequestId], Request>,
+  'requestRevision' : ActorMethod<[RequestId, string], Request>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'savePartnerProfile' : ActorMethod<[PartnerProfile], undefined>,
+  'searchPartners' : ActorMethod<
+    [PartnerSearchCriteria],
+    Array<PartnerSearchResult>
+  >,
   'updateSubscription' : ActorMethod<
     [
       bigint,

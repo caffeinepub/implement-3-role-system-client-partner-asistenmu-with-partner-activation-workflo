@@ -5,8 +5,11 @@ import LandingPage from './pages/LandingPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ClientDashboardPage from './pages/ClientDashboardPage';
 import AsistenmuDashboardPage from './pages/AsistenmuDashboardPage';
+import PartnerDashboardPage from './pages/PartnerDashboardPage';
+import PartnerApplyPage from './pages/PartnerApplyPage';
 import RoleRouter from './routes/RoleRouter';
 import AccessDeniedPage from './pages/AccessDeniedPage';
+import RequireDomainRole from './routes/RequireDomainRole';
 
 // Root layout component
 function RootLayout() {
@@ -38,19 +41,47 @@ const dashboardRoute = createRoute({
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin',
-  component: AdminDashboardPage,
+  component: () => (
+    <RequireDomainRole requiredRole="admin">
+      <AdminDashboardPage />
+    </RequireDomainRole>
+  ),
 });
 
 const clientRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/client',
-  component: ClientDashboardPage,
+  component: () => (
+    <RequireDomainRole requiredRole="client">
+      <ClientDashboardPage />
+    </RequireDomainRole>
+  ),
 });
 
 const asistenmuRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/asistenmu',
-  component: AsistenmuDashboardPage,
+  component: () => (
+    <RequireDomainRole requiredRole="asistenmu">
+      <AsistenmuDashboardPage />
+    </RequireDomainRole>
+  ),
+});
+
+const partnerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/partner',
+  component: () => (
+    <RequireDomainRole requiredRole="partner">
+      <PartnerDashboardPage />
+    </RequireDomainRole>
+  ),
+});
+
+const partnerApplyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/bergabung-menjadi-partner',
+  component: PartnerApplyPage,
 });
 
 const accessDeniedRoute = createRoute({
@@ -66,6 +97,8 @@ const routeTree = rootRoute.addChildren([
   adminRoute,
   clientRoute,
   asistenmuRoute,
+  partnerRoute,
+  partnerApplyRoute,
   accessDeniedRoute,
 ]);
 

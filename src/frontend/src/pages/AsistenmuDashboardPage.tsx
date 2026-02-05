@@ -2,9 +2,14 @@ import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useGetCallerUserProfile } from '../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, LogOut } from 'lucide-react';
-import AsistenmuRequestsTab from '../components/requests/AsistenmuRequestsTab';
+import PartnerAssignmentTab from '../components/asistenmu/PartnerAssignmentTab';
+import AsistenmuIncomingRequestsTab from '../components/asistenmu/AsistenmuIncomingRequestsTab';
+import AsistenmuInProgressTab from '../components/asistenmu/AsistenmuInProgressTab';
+import AsistenmuQARequestsTab from '../components/asistenmu/AsistenmuQARequestsTab';
+import AsistenmuRejectedTab from '../components/asistenmu/AsistenmuRejectedTab';
+import AsistenmuCompletedTab from '../components/asistenmu/AsistenmuCompletedTab';
 
 export default function AsistenmuDashboardPage() {
   const { identity, clear } = useInternetIdentity();
@@ -27,7 +32,7 @@ export default function AsistenmuDashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+      <header className="header-translucent">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -46,17 +51,41 @@ export default function AsistenmuDashboardPage() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto space-y-6">
-          {/* Welcome Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Client Requests</CardTitle>
-              <CardDescription>Manage service requests from your assigned clients</CardDescription>
-            </CardHeader>
-          </Card>
+        <div className="max-w-7xl mx-auto">
+          <Tabs defaultValue="incoming" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
+              <TabsTrigger value="incoming">Permintaan Masuk</TabsTrigger>
+              <TabsTrigger value="assignment">Penugasan Partner</TabsTrigger>
+              <TabsTrigger value="inprogress">Sedang Dikerjakan</TabsTrigger>
+              <TabsTrigger value="qa">Permintaan QA</TabsTrigger>
+              <TabsTrigger value="rejected">Partner Menolak</TabsTrigger>
+              <TabsTrigger value="completed">Selesai</TabsTrigger>
+            </TabsList>
 
-          {/* Requests Tab */}
-          <AsistenmuRequestsTab />
+            <TabsContent value="incoming">
+              <AsistenmuIncomingRequestsTab />
+            </TabsContent>
+
+            <TabsContent value="assignment">
+              <PartnerAssignmentTab />
+            </TabsContent>
+
+            <TabsContent value="inprogress">
+              <AsistenmuInProgressTab />
+            </TabsContent>
+
+            <TabsContent value="qa">
+              <AsistenmuQARequestsTab />
+            </TabsContent>
+
+            <TabsContent value="rejected">
+              <AsistenmuRejectedTab />
+            </TabsContent>
+
+            <TabsContent value="completed">
+              <AsistenmuCompletedTab />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>

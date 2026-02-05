@@ -1,165 +1,77 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-04T20:58:09.578Z",
+  "generatedAt": "2026-02-05T17:59:13.449Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 10,
-    "implemented": 6,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
-        "id": "REQ-10",
-        "summary": "Add a new backend domain model for an MVP “Service Request/Permintaan” that supports: (1) Client creates a request (title, details, optional deadline date), (2) Asistenmu updates request state via a dropdown (In Progress / Request Client Review), optionally storing a Google Drive link when requesting review, (3) Client can either request a revision (mandatory revision details) or mark the request complete (with confirmation). Ensure requests persist in canister state without removing or breaking existing users/subscriptions/service logic.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-11",
-        "summary": "Implement backend assignment resolution so that when a Client creates a request, it is routed to the Asistenmu assigned through the Client’s active Layanan/subscription (not from any field manually set on the request). If the Client has no active subscription with an assigned Asistenmu, the backend must reject request creation with a clear error.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-12",
-        "summary": "Add backend APIs (queries + mutations) for the MVP request flow with role-based authorization: Client: create request, list own requests by client-facing tabs, submit revision (with mandatory revision details), mark complete; Asistenmu: list requests assigned via subscriptions, update request status (In Progress / Request Client Review), set/clear review link when requesting review. Enforce that Client actions are only allowed in the review stage, and Asistenmu actions are not allowed after completion.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-13",
-        "summary": "Add backend endpoints to support Client-side gating of the “Create Request (Buat Permintaan)” CTA by returning the caller’s subscription/service summary, including: total subscription count and active subscription count (and whether an active subscription has an assigned Asistenmu). This must be callable by the Client (not admin-only).",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-14",
-        "summary": "Implement the Client Dashboard UI for the MVP request flow with these tabs: (1) “Delegating Request” (initial post-submit state), (2) “In Progress”, (3) “Client Review Requested” (shows clickable review link when present and shows CTAs), (4) “Revising (Please Wait)”, (5) “Completed”. Provide a “Create Request” form with fields Title, Details, optional Deadline (date).",
+        "id": "REQ-118",
+        "summary": "Update the header styling on the Landing page and all dashboard pages (Admin, Client, Asistenmu, Partner) to use a white header with slight transparency, a subtle bottom divider, and a backdrop blur effect so underlying content remains visible while header text stays readable during scroll. Avoid heavy drop shadows.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/ClientDashboardPage.tsx",
-          "frontend/src/components/requests/ClientCreateRequestForm.tsx",
-          "frontend/src/components/requests/ClientRequestTabs.tsx",
-          "frontend/src/components/requests/RequestListState.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/ClientDashboardPage.tsx",
-          "frontend/src/components/requests/ClientCreateRequestForm.tsx",
-          "frontend/src/components/requests/ClientRequestTabs.tsx",
-          "frontend/src/components/requests/RequestListState.tsx"
-        ]
-      },
-      {
-        "id": "REQ-15",
-        "summary": "Implement Client-side gating UX for the “Create Request (Buat Permintaan)” CTA: disable the button unless (a) the Client has at least 1 subscription AND (b) at least 1 active subscription. When gated, display the warning text exactly: \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\".",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/requests/ClientCreateRequestForm.tsx",
-          "frontend/src/pages/ClientDashboardPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/requests/ClientCreateRequestForm.tsx",
-          "frontend/src/pages/ClientDashboardPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-16",
-        "summary": "Implement the Asistenmu Dashboard UI with a tab “New Client Requests” showing requests routed to that Asistenmu via the Client’s active subscription assignment, and a status dropdown with exactly two options: “In Progress” and “Request Client Review”. When “Request Client Review” is selected, reveal an input field to capture the Google Drive link and persist it to the backend.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/AsistenmuDashboardPage.tsx",
-          "frontend/src/components/requests/AsistenmuRequestCard.tsx",
-          "frontend/src/components/requests/AsistenmuRequestsTab.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/AsistenmuDashboardPage.tsx",
-          "frontend/src/components/requests/AsistenmuRequestCard.tsx",
-          "frontend/src/components/requests/AsistenmuRequestsTab.tsx"
-        ]
-      },
-      {
-        "id": "REQ-17",
-        "summary": "In the Client “Client Review Requested” tab, implement the two CTAs: (1) “Request Revision” which reveals a mandatory revision details field and a submit button (“Submit Revision Request”), and (2) “Complete” which shows a confirmation dialog; upon confirming, mark the request completed and move it to the “Completed” tab in both Client and Asistenmu dashboards.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/requests/ClientReviewActions.tsx",
-          "frontend/src/pages/ClientDashboardPage.tsx",
-          "frontend/src/pages/AsistenmuDashboardPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/requests/ClientReviewActions.tsx",
-          "frontend/src/pages/ClientDashboardPage.tsx",
-          "frontend/src/pages/AsistenmuDashboardPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-18",
-        "summary": "Add/extend centralized React Query hooks to support all MVP request queries and mutations for Client and Asistenmu dashboards, using the existing actor pattern. Ensure status changes invalidate the appropriate query keys so that requests move between tabs immediately after a successful mutation.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useRequests.ts",
-          "frontend/src/backend.d.ts",
-          "frontend/src/pages/ClientDashboardPage.tsx",
-          "frontend/src/pages/AsistenmuDashboardPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useRequests.ts",
-          "frontend/src/backend.d.ts",
-          "frontend/src/pages/ClientDashboardPage.tsx",
-          "frontend/src/pages/AsistenmuDashboardPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-19",
-        "summary": "Add router routes for the Client and Asistenmu dashboards (e.g., /client and /asistenmu) and connect navigation/redirect behavior so authenticated users can reach their correct dashboard without editing immutable authentication hook files.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/routes/RoleRouter.tsx",
+          "frontend/src/index.css",
           "frontend/src/pages/LandingPage.tsx",
-          "frontend/src/pages/AccessDeniedPage.tsx"
+          "frontend/src/pages/AdminDashboardPage.tsx",
+          "frontend/src/pages/ClientDashboardPage.tsx",
+          "frontend/src/pages/AsistenmuDashboardPage.tsx",
+          "frontend/src/pages/PartnerDashboardPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/routes/RoleRouter.tsx",
+          "frontend/src/index.css",
           "frontend/src/pages/LandingPage.tsx",
-          "frontend/src/pages/AccessDeniedPage.tsx"
+          "frontend/src/pages/AdminDashboardPage.tsx",
+          "frontend/src/pages/ClientDashboardPage.tsx",
+          "frontend/src/pages/AsistenmuDashboardPage.tsx",
+          "frontend/src/pages/PartnerDashboardPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-119",
+        "summary": "Adjust the Landing page hero headline typography so it renders as exactly two lines (one sentence per line) with a smaller font size, and update the headline text casing to match the requested two-line copy.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/LandingPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/LandingPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-120",
+        "summary": "Fix all \"Masuk\" / login buttons across the app so they correctly trigger the Internet Identity (II) login flow (restoring previous behavior), using the existing Internet Identity hook/logic without editing immutable authentication hook files.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/MasukButton.tsx",
+          "frontend/src/pages/LandingPage.tsx",
+          "frontend/src/components/AuthButton.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/MasukButton.tsx",
+          "frontend/src/pages/LandingPage.tsx",
+          "frontend/src/components/AuthButton.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/requests/AsistenmuRequestCard.tsx",
-    "frontend/src/components/requests/AsistenmuRequestsTab.tsx",
-    "frontend/src/components/requests/ClientCreateRequestForm.tsx",
-    "frontend/src/components/requests/ClientRequestTabs.tsx",
-    "frontend/src/components/requests/ClientReviewActions.tsx",
-    "frontend/src/components/requests/RequestListState.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/hooks/useRequests.ts",
-    "frontend/src/pages/AccessDeniedPage.tsx",
+    "frontend/src/components/AuthButton.tsx",
+    "frontend/src/components/MasukButton.tsx",
+    "frontend/src/index.css",
+    "frontend/src/pages/AdminDashboardPage.tsx",
     "frontend/src/pages/AsistenmuDashboardPage.tsx",
     "frontend/src/pages/ClientDashboardPage.tsx",
     "frontend/src/pages/LandingPage.tsx",
-    "frontend/src/routes/RoleRouter.tsx",
+    "frontend/src/pages/PartnerDashboardPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

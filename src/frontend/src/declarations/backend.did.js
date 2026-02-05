@@ -8,10 +8,63 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const RequestId = IDL.Nat;
+export const Time = IDL.Int;
+export const TaskStatus = IDL.Variant({
+  'assignedAsPartner' : IDL.Record({
+    'effectiveHours' : IDL.Nat,
+    'partnerId' : IDL.Principal,
+    'workDeadline' : IDL.Opt(Time),
+    'workBriefing' : IDL.Text,
+  }),
+  'rejectedByPartner' : IDL.Record({ 'revisionByPartner' : IDL.Text }),
+  'revisionRequestedByAsistenmu' : IDL.Record({
+    'revisionByAsistenmu' : IDL.Text,
+    'partnerId' : IDL.Principal,
+  }),
+  'newlyCreated' : IDL.Null,
+  'qaRequestedByPartner' : IDL.Record({ 'partnerId' : IDL.Principal }),
+  'offerSentToPartner' : IDL.Record({
+    'effectiveHours' : IDL.Nat,
+    'partnerId' : IDL.Principal,
+    'workBriefing' : IDL.Text,
+  }),
+  'completedBYPartnerAndAsistenmu' : IDL.Record({
+    'finalReport' : IDL.Text,
+    'partnerId' : IDL.Principal,
+  }),
+  'inProgressByPartner' : IDL.Record({ 'partnerId' : IDL.Principal }),
+});
+export const TaskRecordStatus = IDL.Variant({
+  'active' : IDL.Null,
+  'completed' : IDL.Null,
+  'qaRequested' : IDL.Null,
+  'rejected' : IDL.Null,
+  'revisionRequested' : IDL.Null,
+});
+export const Request = IDL.Record({
+  'id' : RequestId,
+  'status' : TaskStatus,
+  'client' : IDL.Principal,
+  'title' : IDL.Text,
+  'createdAt' : Time,
+  'revisionCount' : IDL.Nat,
+  'deadline' : IDL.Opt(Time),
+  'updatedAt' : Time,
+  'details' : IDL.Text,
+  'asistenmu' : IDL.Principal,
+  'recordStatus' : TaskRecordStatus,
+});
 export const UserRole__1 = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
   'guest' : IDL.Null,
+});
+export const RequestInput = IDL.Record({
+  'title' : IDL.Text,
+  'deadline' : IDL.Opt(Time),
+  'subscriptionId' : IDL.Nat,
+  'details' : IDL.Text,
 });
 export const BaseServiceType = IDL.Variant({
   'fokus' : IDL.Null,
@@ -19,7 +72,6 @@ export const BaseServiceType = IDL.Variant({
   'rapi' : IDL.Null,
   'tenang' : IDL.Null,
 });
-export const Time = IDL.Int;
 export const ServiceStatus = IDL.Variant({
   'active' : IDL.Null,
   'hold' : IDL.Null,
@@ -37,7 +89,12 @@ export const SubscriptionRecord = IDL.Record({
   'sharedPrincipals' : IDL.Vec(IDL.Principal),
   'startDate' : Time,
 });
-export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const UserProfile = IDL.Record({
+  'name' : IDL.Text,
+  'whatsapp' : IDL.Text,
+  'email' : IDL.Text,
+  'company' : IDL.Opt(IDL.Text),
+});
 export const ServiceFilter = IDL.Record({
   'status' : IDL.Opt(ServiceStatus),
   'serviceType' : IDL.Opt(BaseServiceType),
@@ -50,6 +107,15 @@ export const ServicePage = IDL.Record({
   'total' : IDL.Nat,
   'page' : IDL.Nat,
   'pageSize' : IDL.Nat,
+});
+export const PartnerProfile = IDL.Record({
+  'completedTasks' : IDL.Nat,
+  'hourlyRate' : IDL.Nat,
+  'pendingEarnings' : IDL.Nat,
+  'companyName' : IDL.Text,
+  'rejectedTasks' : IDL.Nat,
+  'pendingTasks' : IDL.Nat,
+  'skills' : IDL.Vec(IDL.Text),
 });
 export const SubscriptionSummary = IDL.Record({
   'totalSubscriptions' : IDL.Nat,
@@ -71,10 +137,34 @@ export const UserIdentity = IDL.Record({
   'name' : IDL.Text,
   'role' : UserRole,
 });
+export const PartnerSearchCriteria = IDL.Record({
+  'maxHourlyRate' : IDL.Opt(IDL.Nat),
+  'minHourlyRate' : IDL.Opt(IDL.Nat),
+  'companyName' : IDL.Opt(IDL.Text),
+  'skills' : IDL.Opt(IDL.Text),
+});
+export const PartnerSearchResult = IDL.Record({
+  'completedTasks' : IDL.Nat,
+  'hourlyRate' : IDL.Nat,
+  'pendingEarnings' : IDL.Nat,
+  'partnerId' : IDL.Principal,
+  'companyName' : IDL.Text,
+  'rejectedTasks' : IDL.Nat,
+  'pendingTasks' : IDL.Nat,
+  'skills' : IDL.Vec(IDL.Text),
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'acceptOffer' : IDL.Func([RequestId], [Request], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole__1], [], []),
+  'assignTaskToPartner' : IDL.Func(
+      [RequestId, IDL.Principal, IDL.Text, IDL.Nat, IDL.Opt(Time)],
+      [Request],
+      [],
+    ),
+  'completeTask' : IDL.Func([RequestId, IDL.Text], [Request], []),
+  'createRequest' : IDL.Func([RequestInput], [Request], []),
   'createSubscription' : IDL.Func(
       [
         IDL.Principal,
@@ -90,9 +180,23 @@ export const idlService = IDL.Service({
       [SubscriptionRecord],
       [],
     ),
+  'getActiveSubscriptionsForCaller' : IDL.Func(
+      [],
+      [IDL.Vec(SubscriptionRecord)],
+      [],
+    ),
+  'getAsistenmuRequests' : IDL.Func([], [IDL.Vec(Request)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole__1], ['query']),
+  'getClientRequests' : IDL.Func([], [IDL.Vec(Request)], ['query']),
   'getFilteredServices' : IDL.Func([ServiceFilter, IDL.Nat], [ServicePage], []),
+  'getPartnerProfile' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(PartnerProfile)],
+      ['query'],
+    ),
+  'getPartnerRequests' : IDL.Func([], [IDL.Vec(Request)], ['query']),
+  'getRequest' : IDL.Func([RequestId], [IDL.Opt(Request)], ['query']),
   'getSubscriptionSummary' : IDL.Func([], [SubscriptionSummary], ['query']),
   'getUserIdentities' : IDL.Func(
       [IDL.Vec(IDL.Principal)],
@@ -111,8 +215,19 @@ export const idlService = IDL.Service({
     ),
   'initializeSystem' : IDL.Func([IDL.Text], [], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'registerAsistenmu' : IDL.Func([IDL.Principal, IDL.Text], [], []),
   'registerClient' : IDL.Func([IDL.Text], [], []),
+  'registerPartner' : IDL.Func([IDL.Text, IDL.Text], [], []),
+  'rejectOffer' : IDL.Func([RequestId, IDL.Text], [Request], []),
+  'requestQA' : IDL.Func([RequestId], [Request], []),
+  'requestRevision' : IDL.Func([RequestId, IDL.Text], [Request], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'savePartnerProfile' : IDL.Func([PartnerProfile], [], []),
+  'searchPartners' : IDL.Func(
+      [PartnerSearchCriteria],
+      [IDL.Vec(PartnerSearchResult)],
+      ['query'],
+    ),
   'updateSubscription' : IDL.Func(
       [
         IDL.Nat,
@@ -134,10 +249,63 @@ export const idlService = IDL.Service({
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const RequestId = IDL.Nat;
+  const Time = IDL.Int;
+  const TaskStatus = IDL.Variant({
+    'assignedAsPartner' : IDL.Record({
+      'effectiveHours' : IDL.Nat,
+      'partnerId' : IDL.Principal,
+      'workDeadline' : IDL.Opt(Time),
+      'workBriefing' : IDL.Text,
+    }),
+    'rejectedByPartner' : IDL.Record({ 'revisionByPartner' : IDL.Text }),
+    'revisionRequestedByAsistenmu' : IDL.Record({
+      'revisionByAsistenmu' : IDL.Text,
+      'partnerId' : IDL.Principal,
+    }),
+    'newlyCreated' : IDL.Null,
+    'qaRequestedByPartner' : IDL.Record({ 'partnerId' : IDL.Principal }),
+    'offerSentToPartner' : IDL.Record({
+      'effectiveHours' : IDL.Nat,
+      'partnerId' : IDL.Principal,
+      'workBriefing' : IDL.Text,
+    }),
+    'completedBYPartnerAndAsistenmu' : IDL.Record({
+      'finalReport' : IDL.Text,
+      'partnerId' : IDL.Principal,
+    }),
+    'inProgressByPartner' : IDL.Record({ 'partnerId' : IDL.Principal }),
+  });
+  const TaskRecordStatus = IDL.Variant({
+    'active' : IDL.Null,
+    'completed' : IDL.Null,
+    'qaRequested' : IDL.Null,
+    'rejected' : IDL.Null,
+    'revisionRequested' : IDL.Null,
+  });
+  const Request = IDL.Record({
+    'id' : RequestId,
+    'status' : TaskStatus,
+    'client' : IDL.Principal,
+    'title' : IDL.Text,
+    'createdAt' : Time,
+    'revisionCount' : IDL.Nat,
+    'deadline' : IDL.Opt(Time),
+    'updatedAt' : Time,
+    'details' : IDL.Text,
+    'asistenmu' : IDL.Principal,
+    'recordStatus' : TaskRecordStatus,
+  });
   const UserRole__1 = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
     'guest' : IDL.Null,
+  });
+  const RequestInput = IDL.Record({
+    'title' : IDL.Text,
+    'deadline' : IDL.Opt(Time),
+    'subscriptionId' : IDL.Nat,
+    'details' : IDL.Text,
   });
   const BaseServiceType = IDL.Variant({
     'fokus' : IDL.Null,
@@ -145,7 +313,6 @@ export const idlFactory = ({ IDL }) => {
     'rapi' : IDL.Null,
     'tenang' : IDL.Null,
   });
-  const Time = IDL.Int;
   const ServiceStatus = IDL.Variant({
     'active' : IDL.Null,
     'hold' : IDL.Null,
@@ -163,7 +330,12 @@ export const idlFactory = ({ IDL }) => {
     'sharedPrincipals' : IDL.Vec(IDL.Principal),
     'startDate' : Time,
   });
-  const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const UserProfile = IDL.Record({
+    'name' : IDL.Text,
+    'whatsapp' : IDL.Text,
+    'email' : IDL.Text,
+    'company' : IDL.Opt(IDL.Text),
+  });
   const ServiceFilter = IDL.Record({
     'status' : IDL.Opt(ServiceStatus),
     'serviceType' : IDL.Opt(BaseServiceType),
@@ -176,6 +348,15 @@ export const idlFactory = ({ IDL }) => {
     'total' : IDL.Nat,
     'page' : IDL.Nat,
     'pageSize' : IDL.Nat,
+  });
+  const PartnerProfile = IDL.Record({
+    'completedTasks' : IDL.Nat,
+    'hourlyRate' : IDL.Nat,
+    'pendingEarnings' : IDL.Nat,
+    'companyName' : IDL.Text,
+    'rejectedTasks' : IDL.Nat,
+    'pendingTasks' : IDL.Nat,
+    'skills' : IDL.Vec(IDL.Text),
   });
   const SubscriptionSummary = IDL.Record({
     'totalSubscriptions' : IDL.Nat,
@@ -197,10 +378,34 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'role' : UserRole,
   });
+  const PartnerSearchCriteria = IDL.Record({
+    'maxHourlyRate' : IDL.Opt(IDL.Nat),
+    'minHourlyRate' : IDL.Opt(IDL.Nat),
+    'companyName' : IDL.Opt(IDL.Text),
+    'skills' : IDL.Opt(IDL.Text),
+  });
+  const PartnerSearchResult = IDL.Record({
+    'completedTasks' : IDL.Nat,
+    'hourlyRate' : IDL.Nat,
+    'pendingEarnings' : IDL.Nat,
+    'partnerId' : IDL.Principal,
+    'companyName' : IDL.Text,
+    'rejectedTasks' : IDL.Nat,
+    'pendingTasks' : IDL.Nat,
+    'skills' : IDL.Vec(IDL.Text),
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'acceptOffer' : IDL.Func([RequestId], [Request], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole__1], [], []),
+    'assignTaskToPartner' : IDL.Func(
+        [RequestId, IDL.Principal, IDL.Text, IDL.Nat, IDL.Opt(Time)],
+        [Request],
+        [],
+      ),
+    'completeTask' : IDL.Func([RequestId, IDL.Text], [Request], []),
+    'createRequest' : IDL.Func([RequestInput], [Request], []),
     'createSubscription' : IDL.Func(
         [
           IDL.Principal,
@@ -216,13 +421,27 @@ export const idlFactory = ({ IDL }) => {
         [SubscriptionRecord],
         [],
       ),
+    'getActiveSubscriptionsForCaller' : IDL.Func(
+        [],
+        [IDL.Vec(SubscriptionRecord)],
+        [],
+      ),
+    'getAsistenmuRequests' : IDL.Func([], [IDL.Vec(Request)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole__1], ['query']),
+    'getClientRequests' : IDL.Func([], [IDL.Vec(Request)], ['query']),
     'getFilteredServices' : IDL.Func(
         [ServiceFilter, IDL.Nat],
         [ServicePage],
         [],
       ),
+    'getPartnerProfile' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(PartnerProfile)],
+        ['query'],
+      ),
+    'getPartnerRequests' : IDL.Func([], [IDL.Vec(Request)], ['query']),
+    'getRequest' : IDL.Func([RequestId], [IDL.Opt(Request)], ['query']),
     'getSubscriptionSummary' : IDL.Func([], [SubscriptionSummary], ['query']),
     'getUserIdentities' : IDL.Func(
         [IDL.Vec(IDL.Principal)],
@@ -241,8 +460,19 @@ export const idlFactory = ({ IDL }) => {
       ),
     'initializeSystem' : IDL.Func([IDL.Text], [], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'registerAsistenmu' : IDL.Func([IDL.Principal, IDL.Text], [], []),
     'registerClient' : IDL.Func([IDL.Text], [], []),
+    'registerPartner' : IDL.Func([IDL.Text, IDL.Text], [], []),
+    'rejectOffer' : IDL.Func([RequestId, IDL.Text], [Request], []),
+    'requestQA' : IDL.Func([RequestId], [Request], []),
+    'requestRevision' : IDL.Func([RequestId, IDL.Text], [Request], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'savePartnerProfile' : IDL.Func([PartnerProfile], [], []),
+    'searchPartners' : IDL.Func(
+        [PartnerSearchCriteria],
+        [IDL.Vec(PartnerSearchResult)],
+        ['query'],
+      ),
     'updateSubscription' : IDL.Func(
         [
           IDL.Nat,

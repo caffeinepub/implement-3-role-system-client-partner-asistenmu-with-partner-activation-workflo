@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useGetCallerUserProfile, useGetSubscriptionSummary } from '../hooks/useQueries';
+import { useGetClientRequests } from '../hooks/useRequests';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, FileText, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Loader2, FileText, AlertCircle } from 'lucide-react';
 import ClientCreateRequestForm from '../components/requests/ClientCreateRequestForm';
 import ClientRequestTabs from '../components/requests/ClientRequestTabs';
+import ClientProfileSection from '../components/client/ClientProfileSection';
+import ClientRequestSummaryCards from '../components/client/ClientRequestSummaryCards';
+import CollapsibleSection from '../components/client/CollapsibleSection';
 
 export default function ClientDashboardPage() {
   const { identity, clear } = useInternetIdentity();
   const queryClient = useQueryClient();
-  const { data: profile, isLoading: profileLoading } = useGetCallerUserProfile();
+  const { data: profile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
   const { data: subscriptionSummary, isLoading: summaryLoading } = useGetSubscriptionSummary();
+  const { data: requests, isLoading: requestsLoading } = useGetClientRequests();
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   const handleLogout = async () => {
@@ -35,71 +38,51 @@ export default function ClientDashboardPage() {
     Number(subscriptionSummary.activeSubscriptions) > 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+      <header className="header-translucent">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Client Dashboard</h1>
-              <p className="text-sm text-muted-foreground">
-                Welcome back, {profile?.name || 'Client'}
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="text-2xl font-bold text-primary">Asistenku</div>
             </div>
             <Button onClick={handleLogout} variant="outline" size="sm">
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
+              Keluar
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto space-y-6">
-          {/* Subscription Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Subscription Status</CardTitle>
-              <CardDescription>Your current service subscriptions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">Total Subscriptions</p>
-                  <p className="text-2xl font-bold">
-                    {subscriptionSummary ? Number(subscriptionSummary.totalSubscriptions) : 0}
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">Active Subscriptions</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {subscriptionSummary ? Number(subscriptionSummary.activeSubscriptions) : 0}
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">Asistenmu Assigned</p>
-                  <p className="text-2xl font-bold">
-                    {subscriptionSummary?.hasActiveAsistenmu ? (
-                      <CheckCircle2 className="w-6 h-6 text-green-600" />
-                    ) : (
-                      <AlertCircle className="w-6 h-6 text-amber-600" />
-                    )}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Greeting */}
+      <div className="container mx-auto px-4 py-6">
+        <h1 className="text-2xl font-semibold text-foreground">
+          Halo, {profile?.name || 'Client'} apa yang akan anda lakukan hari ini?
+        </h1>
+      </div>
 
-          {/* Create Request Button */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Service Requests</CardTitle>
-              <CardDescription>Create and manage your service requests</CardDescription>
-            </CardHeader>
-            <CardContent>
+      {/* Main Content */}
+      <main className="container mx-auto px-4 pb-8 flex-1">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* Profile Section - Collapsible, Collapsed by Default */}
+          <ClientProfileSection
+            profile={profile}
+            identity={identity}
+            subscriptionSummary={subscriptionSummary}
+            profileLoading={profileLoading}
+            isFetched={isFetched}
+          />
+
+          {/* Request Summary Cards */}
+          <ClientRequestSummaryCards
+            requests={requests || []}
+            isLoading={requestsLoading}
+          />
+
+          {/* Service Requests Section - Collapsible */}
+          <CollapsibleSection title="Layanan Permintaan" defaultOpen={true}>
+            <div className="space-y-4">
               {!canCreateRequest && (
-                <div className="mb-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
                   <p className="text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2">
                     <AlertCircle className="w-4 h-4" />
                     Aktifkan layanan terlebih dahulu sebelum membuat permintaan
@@ -114,13 +97,24 @@ export default function ClientDashboardPage() {
                 <FileText className="w-4 h-4 mr-2" />
                 Buat Permintaan
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </CollapsibleSection>
 
-          {/* Request Tabs */}
-          <ClientRequestTabs />
+          {/* Request Tabs - Collapsible */}
+          <CollapsibleSection title="Permintaan" defaultOpen={true}>
+            <ClientRequestTabs requests={requests} isLoading={requestsLoading} />
+          </CollapsibleSection>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-card/50 py-6 mt-auto">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            © 2026 Asistenku - PT. Asistenku Digital Indonesia
+          </p>
+        </div>
+      </footer>
 
       {/* Create Request Dialog */}
       {showCreateForm && (

@@ -16,15 +16,15 @@ interface SubscriptionsTableProps {
 
 export default function SubscriptionsTable({ onEdit, onCreateNew }: SubscriptionsTableProps) {
   const [currentPage, setCurrentPage] = useState(0);
-  const [serviceType, setServiceType] = useState<BaseServiceType | ''>('');
-  const [status, setStatus] = useState<ServiceStatus | ''>('');
+  const [serviceType, setServiceType] = useState<BaseServiceType | 'all'>('all');
+  const [status, setStatus] = useState<ServiceStatus | 'all'>('all');
   const [minQuantity, setMinQuantity] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
   const filter = {
-    serviceType: serviceType ? serviceType : undefined,
-    status: status ? status : undefined,
+    serviceType: serviceType !== 'all' ? serviceType : undefined,
+    status: status !== 'all' ? status : undefined,
     minQuantity: minQuantity ? BigInt(minQuantity) : undefined,
     startDate: startDate ? BigInt(new Date(startDate).getTime() * 1_000_000) : undefined,
     endDate: endDate ? BigInt(new Date(endDate).getTime() * 1_000_000) : undefined,
@@ -51,8 +51,8 @@ export default function SubscriptionsTable({ onEdit, onCreateNew }: Subscription
   };
 
   const clearFilters = () => {
-    setServiceType('');
-    setStatus('');
+    setServiceType('all');
+    setStatus('all');
     setMinQuantity('');
     setStartDate('');
     setEndDate('');
@@ -87,12 +87,12 @@ export default function SubscriptionsTable({ onEdit, onCreateNew }: Subscription
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 p-4 bg-muted/30 rounded-lg">
         <div className="space-y-2">
           <label className="text-sm font-medium">Service Type</label>
-          <Select value={serviceType} onValueChange={(value) => { setServiceType(value as BaseServiceType | ''); handleFilterChange(); }}>
+          <Select value={serviceType} onValueChange={(value) => { setServiceType(value as BaseServiceType | 'all'); handleFilterChange(); }}>
             <SelectTrigger>
               <SelectValue placeholder="All types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All types</SelectItem>
+              <SelectItem value="all">All types</SelectItem>
               <SelectItem value={BaseServiceType.tenang}>Tenang</SelectItem>
               <SelectItem value={BaseServiceType.rapi}>Rapi</SelectItem>
               <SelectItem value={BaseServiceType.fokus}>Fokus</SelectItem>
@@ -103,12 +103,12 @@ export default function SubscriptionsTable({ onEdit, onCreateNew }: Subscription
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Status</label>
-          <Select value={status} onValueChange={(value) => { setStatus(value as ServiceStatus | ''); handleFilterChange(); }}>
+          <Select value={status} onValueChange={(value) => { setStatus(value as ServiceStatus | 'all'); handleFilterChange(); }}>
             <SelectTrigger>
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All statuses</SelectItem>
+              <SelectItem value="all">All statuses</SelectItem>
               <SelectItem value={ServiceStatus.active}>Active</SelectItem>
               <SelectItem value={ServiceStatus.hold}>Hold</SelectItem>
               <SelectItem value={ServiceStatus.suspended}>Suspended</SelectItem>

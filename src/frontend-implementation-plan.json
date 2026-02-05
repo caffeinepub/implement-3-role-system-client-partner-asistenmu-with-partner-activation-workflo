@@ -1,175 +1,90 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "MVP Permintaan (Service Request) flow — Client & Asistenmu Dashboards (Frontend)",
+  "title": "Translucent white sticky headers, hero headline wrapping, and restored II login triggers",
   "requirements": [
     {
-      "id": "REQ-14",
-      "summary": "Implement Client dashboard UI with request tabs and a Create Request form (title, details, optional deadline) backed by React Query loading/error/empty states.",
+      "id": "REQ-118",
+      "summary": "Unify Landing + dashboard headers to a sticky translucent white style with subtle divider and backdrop blur (no heavy shadows).",
       "acceptanceCriteria": [
-        "Client can submit a request and immediately see it appear in the correct Client tab/state",
-        "In the “Client Review Requested” tab, a review link is rendered as a clickable link when present",
-        "The UI uses React Query hooks for loading/error/empty states per tab"
+        "LandingPage and each dashboard page header is sticky and uses a translucent white background (not solid dark/gray).",
+        "A backdrop blur is applied (e.g., via Tailwind backdrop-blur classes) so content behind the header appears blurred when scrolling.",
+        "There is a subtle bottom border/divider line; there is no heavy shadow on the header.",
+        "Header content (logo/text/buttons) remains readable on scroll across light backgrounds."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/ClientDashboardPage.tsx",
+          "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Build the Client dashboard page UI with the required tabs: “Delegating Request”, “In Progress”, “Client Review Requested”, “Revising (Please Wait)”, and “Completed”. Use React Query hooks to fetch per-tab lists (or fetch once and filter) and show loading/error/empty states. Render request cards that include title/details/deadline/updated time and conditionally show the review link when present."
-        },
-        {
-          "path": "frontend/src/components/requests/ClientCreateRequestForm.tsx",
-          "operation": "create",
-          "description": "Create a Client “Create Request (Buat Permintaan)” form component with fields Title, Details, and optional Deadline (date input). Wire submit to the create-request mutation hook and ensure the UI reflects mutation loading/error/success."
-        },
-        {
-          "path": "frontend/src/components/requests/ClientRequestTabs.tsx",
-          "operation": "create",
-          "description": "Create a Client dashboard tabs component that renders the five required tab views and composes request list rendering + per-request actions placeholders (with actions fully implemented in REQ-17)."
-        },
-        {
-          "path": "frontend/src/components/requests/RequestListState.tsx",
-          "operation": "create",
-          "description": "Create a small shared UI component for consistent list states (loading skeleton, error message, empty state) used across Client and Asistenmu dashboards."
-        }
-      ]
-    },
-    {
-      "id": "REQ-15",
-      "summary": "Implement Client-side gating for “Create Request (Buat Permintaan)” CTA using subscription summary and show the exact warning message when gated.",
-      "acceptanceCriteria": [
-        "When total subscriptions == 0, Create Request is disabled and the warning text is visible",
-        "When active subscriptions == 0, Create Request is disabled and the warning text is visible",
-        "When there is at least one active subscription, Create Request becomes enabled"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Add a React Query hook to fetch the caller’s subscription/service summary via the existing actor pattern (e.g., useGetSubscriptionSummary). Use this hook to support gating logic for the Client “Create Request” CTA."
-        },
-        {
-          "path": "frontend/src/components/requests/ClientCreateRequestForm.tsx",
-          "operation": "modify",
-          "description": "Disable the “Buat Permintaan” CTA unless (a) totalSubscriptions > 0 AND (b) activeSubscriptions > 0. When gated, display the warning text exactly: \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\". Ensure the warning is visible whenever the CTA is disabled due to gating."
-        },
-        {
-          "path": "frontend/src/pages/ClientDashboardPage.tsx",
-          "operation": "modify",
-          "description": "Ensure the Client dashboard surfaces the gated CTA state clearly (button disabled + warning text) based on the subscription summary hook results, including correct behavior for loading and error states (do not incorrectly enable the CTA while summary is unknown)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-16",
-      "summary": "Implement Asistenmu dashboard UI with “New Client Requests” tab, two-option status dropdown, and conditional Google Drive link input persisted to backend.",
-      "acceptanceCriteria": [
-        "Asistenmu can see only requests assigned to them through active client subscriptions",
-        "Changing the dropdown to “In Progress” persists and moves the request to the correct state/tab views",
-        "Changing the dropdown to “Request Client Review” requires a link field to appear and saves the link (optional unless explicitly required by backend)"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/AsistenmuDashboardPage.tsx",
-          "operation": "modify",
-          "description": "Build the Asistenmu dashboard page UI with a tab “New Client Requests” that lists assigned requests using React Query hooks. Render each request with a status dropdown containing exactly two options: “In Progress” and “Request Client Review”."
-        },
-        {
-          "path": "frontend/src/components/requests/AsistenmuRequestCard.tsx",
-          "operation": "create",
-          "description": "Create an Asistenmu request card component that shows request summary + the required dropdown. When “Request Client Review” is selected, reveal a Google Drive link input and persist it via the appropriate mutation hook. Hide/disable controls when a request is completed (per backend rules)."
-        },
-        {
-          "path": "frontend/src/components/requests/AsistenmuRequestsTab.tsx",
-          "operation": "create",
-          "description": "Create a tab body component for “New Client Requests” that composes list-state UI and AsistenmuRequestCard rendering, driven by React Query hook results."
-        }
-      ]
-    },
-    {
-      "id": "REQ-17",
-      "summary": "Implement Client “Client Review Requested” tab CTAs: Request Revision (mandatory details) and Complete (confirmation dialog) with immediate tab movement via query invalidation.",
-      "acceptanceCriteria": [
-        "Revision submission is blocked in the UI until revision details are provided",
-        "Complete action always requires an explicit confirm step before mutation is sent",
-        "After completion, both dashboards show the request under “Completed” without requiring a manual refresh (via query invalidation)"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/requests/ClientReviewActions.tsx",
-          "operation": "create",
-          "description": "Create a Client-only actions component for requests in “Client Review Requested” state that renders two CTAs: “Request Revision” (reveals mandatory revision details + “Submit Revision Request” button) and “Complete” (opens a confirmation dialog before sending the complete mutation)."
-        },
-        {
-          "path": "frontend/src/pages/ClientDashboardPage.tsx",
-          "operation": "modify",
-          "description": "In the “Client Review Requested” tab, render ClientReviewActions for each request. Ensure the review link is clickable when present, and ensure revision details are required before enabling submission. Trigger query invalidation so the request moves to “Revising (Please Wait)” or “Completed” without manual refresh."
-        },
-        {
-          "path": "frontend/src/pages/AsistenmuDashboardPage.tsx",
-          "operation": "modify",
-          "description": "Ensure Asistenmu dashboard list queries are invalidated/refetched after Client completes a request so the item moves to “Completed” state views without manual refresh (based on shared query keys and invalidation rules in the request hooks)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-18",
-      "summary": "Add centralized React Query hooks for all MVP request queries and mutations using the existing actor pattern with correct query key invalidation so requests move between tabs immediately.",
-      "acceptanceCriteria": [
-        "All request lists and actions are performed through hooks in the existing hooks pattern (React Query + actor)",
-        "After each mutation (create, status update, request revision, complete), the relevant request list queries refetch and reflect the new state"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useRequests.ts",
-          "operation": "create",
-          "description": "Create a centralized set of React Query hooks for the MVP request flow (Client: create/list/request revision/complete; Asistenmu: list assigned/update status/set or clear review link) using the existing actor pattern. Define stable query keys for client and asistenmu listings and implement mutation success handlers that invalidate/refetch the appropriate keys so items move between tabs immediately."
-        },
-        {
-          "path": "frontend/src/backend.d.ts",
-          "operation": "modify",
-          "description": "Extend the frontend backend type definitions with the MVP request types and actor methods needed by the new request hooks (e.g., request record shape, status union, list + mutation method signatures). Keep changes aligned with the backend interface once available so the frontend compiles cleanly."
-        },
-        {
-          "path": "frontend/src/pages/ClientDashboardPage.tsx",
-          "operation": "modify",
-          "description": "Refactor the Client dashboard data access to exclusively use the centralized request hooks for queries and mutations (no direct actor calls in the page), ensuring consistent loading/error/empty handling per tab."
-        },
-        {
-          "path": "frontend/src/pages/AsistenmuDashboardPage.tsx",
-          "operation": "modify",
-          "description": "Refactor the Asistenmu dashboard data access to exclusively use the centralized request hooks for queries and mutations (no direct actor calls in the page), ensuring consistent loading/error/empty handling."
-        }
-      ]
-    },
-    {
-      "id": "REQ-19",
-      "summary": "Add routes for /client and /asistenmu dashboards and implement role-based navigation/redirect so authenticated users reach the correct dashboard without changing immutable auth hook files.",
-      "acceptanceCriteria": [
-        "The app has working routes for Client and Asistenmu dashboard pages",
-        "No changes are made to immutable paths (authentication hooks and UI component sources marked read-only)",
-        "A logged-in user with role Client can navigate to the Client dashboard; a user with role Asistenmu can navigate to the Asistenmu dashboard"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Register TanStack Router routes for /client and /asistenmu that render ClientDashboardPage and AsistenmuDashboardPage. Also add a lightweight role-based redirect route (e.g., /dashboard) that renders RoleRouter to send authenticated users to the correct dashboard."
-        },
-        {
-          "path": "frontend/src/routes/RoleRouter.tsx",
-          "operation": "modify",
-          "description": "Implement role-based routing logic that uses Internet Identity + actor-backed identity/role lookup to redirect authenticated users to /client or /asistenmu (and preserve /admin behavior for admins if applicable). Show an access-denied view for authenticated users without the required role(s), and avoid changing any immutable authentication hook files."
+          "description": "Add a shared header utility/class (e.g., an @layer components class) that applies: sticky top positioning, translucent white background, backdrop blur, and a subtle bottom divider while avoiding heavy drop shadows. This enables consistent header styling across Landing and all dashboards."
         },
         {
           "path": "frontend/src/pages/LandingPage.tsx",
           "operation": "modify",
-          "description": "Update the post-login redirect behavior to navigate authenticated users to the role-based redirect route (e.g., /dashboard) instead of always navigating to /admin, ensuring Client/Asistenmu users can reach their dashboards."
+          "description": "Update the Landing page <header> to use the shared translucent-white + backdrop-blur + subtle divider header styling (replacing the current fully transparent header) while keeping existing layout/navigation intact."
         },
         {
-          "path": "frontend/src/pages/AccessDeniedPage.tsx",
+          "path": "frontend/src/pages/AdminDashboardPage.tsx",
           "operation": "modify",
-          "description": "Implement an Access Denied page UI that can be used by RoleRouter when a user is authenticated but lacks permission for the requested dashboard route."
+          "description": "Update the Admin dashboard <header> styling to match the shared translucent white header (ensure subtle divider and blur remain; remove/avoid heavy header shadows)."
+        },
+        {
+          "path": "frontend/src/pages/ClientDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Update the Client dashboard <header> styling to match the shared translucent white header (sticky, blur, subtle divider; no heavy shadow)."
+        },
+        {
+          "path": "frontend/src/pages/AsistenmuDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Update the Asistenmu dashboard <header> styling to match the shared translucent white header (sticky, blur, subtle divider; no heavy shadow)."
+        },
+        {
+          "path": "frontend/src/pages/PartnerDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Update the Partner dashboard <header> styling to match the shared translucent white header (sticky, blur, subtle divider; no heavy shadow)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-119",
+      "summary": "Adjust Landing hero headline copy/casing and typography so it renders as exactly two explicit lines with a smaller font size.",
+      "acceptanceCriteria": [
+        "The hero headline text is exactly:\nLine 1: \"Tenang menjalani hari,\"\nLine 2: \"Didampingi oleh Asistenmu dengan rapi.\"",
+        "The hero headline font size is reduced from the current sizing so each sentence fits on a single line on typical mobile and desktop widths (no unintended wrapping beyond the explicit line break).",
+        "Only the hero headline typography/copy is changed; other hero content remains intact."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/LandingPage.tsx",
+          "operation": "modify",
+          "description": "Update the hero headline to the requested two-line copy with the corrected casing on line 2, and reduce headline typography sizing so each sentence stays on its own line (beyond the explicit line break) on typical mobile/desktop widths while leaving other hero content unchanged."
+        }
+      ]
+    },
+    {
+      "id": "REQ-120",
+      "summary": "Ensure every \"Masuk\"/login control reliably triggers the existing Internet Identity login flow with proper loading/disabled state, without changing immutable auth-hook files.",
+      "acceptanceCriteria": [
+        "Every UI control labeled \"Masuk\" (or otherwise intended to log in) triggers the II login flow and successfully authenticates the user.",
+        "After a successful login from public pages, the app can proceed to the existing role-based routing behavior (e.g., redirect to /dashboard and onward as currently implemented).",
+        "No changes are made to files under the immutable paths listed in SYSTEM_CONTEXT (authentication hooks are composed/used as-is).",
+        "Login buttons properly handle the logging-in state (disabled/loading) to prevent double-click issues."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/MasukButton.tsx",
+          "operation": "create",
+          "description": "Create a shared \"Masuk\" login button component that composes the existing Internet Identity hook logic (useInternetIdentity) to call login(), uses loginStatus to disable/indicate loading to prevent double-clicks, and (when applicable) clears query cache on logout. Use the selected \"authorization\" component’s frontend authentication guidance for handling login status and cache clearing; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/LandingPage.tsx",
+          "operation": "modify",
+          "description": "Replace the Landing page inline handleLogin + \"Masuk\" button wiring with the shared MasukButton component so clicking \"Masuk\" consistently triggers the II login flow and reflects the logging-in disabled/loading state. Use the selected \"authorization\" component’s frontend authentication guidance; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/AuthButton.tsx",
+          "operation": "modify",
+          "description": "Align AuthButton’s login click handling with the shared II login flow expectations (e.g., ensure disabled state during loginStatus === 'logging-in' and consistent error handling), without editing immutable hook files. Use the selected \"authorization\" component’s frontend authentication guidance; verify the component's usage instructions before implementing."
         }
       ]
     }

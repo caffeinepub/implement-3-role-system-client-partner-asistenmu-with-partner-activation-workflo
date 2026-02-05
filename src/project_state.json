@@ -1,7 +1,30 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 44,
-  "summary": "Asistenku admin dashboard will remain standardized with top-level tabs and nested Layanan sub-tabs, and the cross-dashboard Task/Permintaan workflow is being scoped to a simpler MVP: Client submits a request form → routed to the assigned Asistenmu via the client’s active Layanan → AM updates status (Dalam Proses Pengerjaan / Meminta Review Client with optional GDrive link) → Client can request revision (with mandatory revision details) or mark complete (with confirmation), and completed requests appear in both Client and AM “Permintaan Selesai” tabs.",
+  "projectStateVersion": 180,
+  "summary": "Asistenku admin dashboard remains standardized with top-level tabs and nested Layanan sub-tabs, and the MVP Permintaan/Task workflow includes: automatic Request ID generation at client request creation, an Asistenmu-side Partner assignment flow (Penugasan Partner) implemented as a form-only tab (no list view) with partner search, Partner accept/reject with a cumulative rejection counter shown in Partner stats/tab, a QA/revision loop (Partner requests QA → AM revisi/selesai), and Partner earnings calculation (jam efektif × rate per jam) stored only once when Asistenmu marks a task selesai and shown in Partner “Pendapatan” tab; accepted tasks appear under Partner “Pekerjaan Aktif” and Asistenmu “Sedang dikerjakan Partner”. Client dashboard UX is expanded with an Indonesian-layout profile section and collapsible sections (Profile, Permintaan, Service Request), including a generated read-only Client ID (CA-XXXXXX) and request summary cards sourced from Permintaan data. Partner management scope is expanding to support PartnerStatus (pending/active/rejected/suspended/blacklist), PartnerLevel (junior/senior/expert) with fixed derived hourly-rate mapping (35000/55000/75000) with no manual rate input, blacklist access blocking redirect page, and migration of legacy hourlyRate to inferred level; when admin activates a pending partner, the system defaults level=junior (no level selection during activation) and sets status=active with derived hourly rate. Admin Partner tab scope: add summary cards for Suspended and Blacklisted; provide separate status-based lists (Pending/Active/Suspended/Blacklist) with server-backed pagination + search; enforce action buttons per status (Pending: Aktifkan+Reject; Active: Suspend+Blacklist; Suspended: Reaktivasi+Blacklist; Blacklist: no actions). Core stability/security fixes were implemented to restore Client dashboard loading (queries fire correctly) and to enforce domain-role route protection so non-admin users cannot access admin routes/actions via direct URL.",
+  "architectural_notes": [
+    "Frontend is a React SPA using TanStack Router (route tree in App.tsx) and @tanstack/react-query for data fetching/mutations with cache invalidation.",
+    "Authentication is encapsulated in an InternetIdentityProvider built on @dfinity/auth-client, exposing identity + login/logout + status flags.",
+    "A dedicated useActor hook creates an anonymous vs identity-bound canister actor and (when authenticated) calls a backend access-control initialization method.",
+    "Sensitive bootstrap/admin token is read from the URL hash and persisted in sessionStorage, then removed from the URL (utils/urlParams.ts).",
+    "Backend authorization is separated into an AccessControl module and a MixinAuthorization that exposes authorization-related canister methods.",
+    "Backend domain state is stored in stable Maps for users and userProfiles, plus a stable systemInitialized flag.",
+    "Admin UX is organized as a tabbed admin dashboard with separate panels for partner activation, Asistenmu assignment, and a polled summary tab.",
+    "UI stack uses TailwindCSS + shadcn/ui components, lucide icons, sonner toasts, and next-themes for dark mode.",
+    "Most backend authorization/validation failures use Runtime.trap, surfacing as React Query errors in the UI.",
+    "React Query hooks provide a centralized typed client for backend calls (profiles, registration, partner flow, admin actions, stats)."
+  ],
+  "known_issues": [
+    "AccessControlState is not stable (not stored in stable vars), so role assignments can reset on canister upgrade/redeploy.",
+    "backend/main.mo registerClient calls AccessControl.assignRole(...,#user), which is admin-only in AccessControl; this will trap for non-admin callers and break client self-registration.",
+    "RoleRouter and useGetUserRole are based on AccessControl roles (#admin/#user/#guest), not the app’s domain roles (#client/#partner/#asistenmu/#admin), so the UI cannot reliably route to /partner or /asistenmu based on actual user role state.",
+    "Because _initializeAccessControlWithSecret is called on login, most authenticated users become AccessControl #user even if they never completed “registration” in the users Map, preventing redirect to /register in many cases.",
+    "useActor always calls _initializeAccessControlWithSecret; MixinAuthorization traps if CAFFEINE_ADMIN_TOKEN env var is missing, potentially breaking all authenticated sessions.",
+    "Partner application form data (companyName/contactEmail/description) is accepted by the backend but is not persisted, so admins cannot review application details beyond the pending user list.",
+    "ClientCreateRequestForm currently uses a hardcoded placeholder asistenmuId ('aaaaa-aa') instead of deriving the Asistenmu Principal from the client’s active Layanan; this prevents routing new requests to the correct Asistenmu \"Permintaan Masuk\" inbox and breaks multi-layanan selection requirements.",
+    "After deploying build (v16), the app URL sometimes becomes completely inaccessible and shows a blank page with a sad pixel-face icon (full-page crash/regression)."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "IF-1",
@@ -332,50 +355,348 @@
       "version": 1
     },
     {
-      "id": "feature-implement-the-client-dashboard-ui-for-the-mvp-request-flow-with-these-tabs-1-delegating-request-initial-post-submit-state-2-in-progress-3-client-review-requested-shows-clickable-review-link-when-present-and-shows-ctas-4-revising-please-wait-5-completed-provide-a-create-request-form-with-fields-title-details-optional-deadline-date",
-      "title": "Implement the Client Dashboard UI for the MVP request flow with these tabs: (1) “Delegating Request” (initial post-submit state), (2) “In Progress”, (3) “Client Review Requested” (shows clickable review link when present and shows CTAs), (4) “Revising (Please Wait)”, (5) “Completed”. Provide a “Create Request” form with fields Title, Details, optional Deadline (date).",
+      "id": "IF-29",
+      "title": "Standardized Admin Dashboard top-level tab layout with placeholder panels",
+      "synonyms": [
+        "AdminDashboard tabs",
+        "ReadOnlyPlaceholderPanel"
+      ],
+      "description": "Admin dashboard uses a consistent top-level tab structure for all admin features; unimplemented sections render as read-only/placeholder panels to preserve the standardized layout for future expansion.",
       "reqIds": [
-        "REQ-14"
+        "AR-6",
+        "AR-8"
       ],
       "version": 1
     },
     {
-      "id": "feature-implement-client-side-gating-ux-for-the-create-request-buat-permintaan-cta-disable-the-button-unless-a-the-client-has-at-least-1-subscription-and-b-at-least-1-active-subscription-when-gated-display-the-warning-text-exactly-aktifkan-layanan-terlebih-dahulu-sebelum-membuat-permintaan",
-      "title": "Implement Client-side gating UX for the “Create Request (Buat Permintaan)” CTA: disable the button unless (a) the Client has at least 1 subscription AND (b) at least 1 active subscription. When gated, display the warning text exactly: \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\".",
+      "id": "IF-30",
+      "title": "Simplified MVP Permintaan/Request workflow (Client ↔ Asistenmu)",
+      "synonyms": [
+        "Permintaan MVP",
+        "Requests flow"
+      ],
+      "description": "Implements the simplified cross-dashboard Permintaan flow: Client creates a request via form; it is routed to the assigned Asistenmu via the client’s active Layanan; Asistenmu updates status (Dalam Proses Pengerjaan / Meminta Review Client) with optional Google Drive link; Client can request revision with mandatory details or mark complete with confirmation; completed items appear in both Client and Asistenmu \"Permintaan Selesai\" tabs.",
       "reqIds": [
-        "REQ-15"
+        "AR-23"
       ],
       "version": 1
     },
     {
-      "id": "feature-implement-the-asistenmu-dashboard-ui-with-a-tab-new-client-requests-showing-requests-routed-to-that-asistenmu-via-the-client-s-active-subscription-assignment-and-a-status-dropdown-with-exactly-two-options-in-progress-and-request-client-review-when-request-client-review-is-selected-reveal-an-input-field-to-capture-the-google-drive-link-and-persist-it-to-the-backend",
-      "title": "Implement the Asistenmu Dashboard UI with a tab “New Client Requests” showing requests routed to that Asistenmu via the Client’s active subscription assignment, and a status dropdown with exactly two options: “In Progress” and “Request Client Review”. When “Request Client Review” is selected, reveal an input field to capture the Google Drive link and persist it to the backend.",
+      "id": "IF-31",
+      "title": "Client request creation gating by active Layanan/subscription",
+      "synonyms": [
+        "Buat Permintaan gating",
+        "active subscription check"
+      ],
+      "description": "Client \"Buat Permintaan\" CTA and form submission are gated to require at least one active Layanan/subscription; when gated, the UI disables the action and shows the warning text instructing the user to activate layanan first.",
       "reqIds": [
-        "REQ-16"
+        "AR-24",
+        "AR-25"
       ],
       "version": 1
     },
     {
-      "id": "feature-in-the-client-client-review-requested-tab-implement-the-two-ctas-1-request-revision-which-reveals-a-mandatory-revision-details-field-and-a-submit-button-submit-revision-request-and-2-complete-which-shows-a-confirmation-dialog-upon-confirming-mark-the-request-completed-and-move-it-to-the-completed-tab-in-both-client-and-asistenmu-dashboards",
-      "title": "In the Client “Client Review Requested” tab, implement the two CTAs: (1) “Request Revision” which reveals a mandatory revision details field and a submit button (“Submit Revision Request”), and (2) “Complete” which shows a confirmation dialog; upon confirming, mark the request completed and move it to the “Completed” tab in both Client and Asistenmu dashboards.",
+      "id": "IF-32",
+      "title": "Centralized request hooks and UI components for Permintaan tabs/actions",
+      "synonyms": [
+        "useRequests",
+        "ClientRequestTabs",
+        "AsistenmuRequestsTab"
+      ],
+      "description": "Adds a dedicated request hook layer and reusable UI components/cards/tabs for listing requests and performing role-specific actions (AM status updates, client review actions) with appropriate loading/empty/error states.",
       "reqIds": [
-        "REQ-17"
+        "AR-23"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-extend-centralized-react-query-hooks-to-support-all-mvp-request-queries-and-mutations-for-client-and-asistenmu-dashboards-using-the-existing-actor-pattern-ensure-status-changes-invalidate-the-appropriate-query-keys-so-that-requests-move-between-tabs-immediately-after-a-successful-mutation",
-      "title": "Add/extend centralized React Query hooks to support all MVP request queries and mutations for Client and Asistenmu dashboards, using the existing actor pattern. Ensure status changes invalidate the appropriate query keys so that requests move between tabs immediately after a successful mutation.",
+      "id": "IF-33",
+      "title": "Automatic Request/Task ID generation on client request creation",
+      "synonyms": [
+        "Request ID counter",
+        "monotonic task id"
+      ],
+      "description": "Client request creation generates a stable, monotonically increasing Request/Task ID and persists it with the task record so all dashboards reference the same identifier.",
       "reqIds": [
+        "AR-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-34",
+      "title": "Asistenmu Partner assignment flow (Penugasan Partner) with partner search",
+      "synonyms": [
+        "PartnerAssignmentTab",
+        "Penugasan Partner form-only"
+      ],
+      "description": "Asistenmu can select an incoming request and assign it to a Partner using a dedicated form-only tab (no list view) that supports partner search/selection.",
+      "reqIds": [
+        "AR-27",
+        "AR-12",
+        "AR-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-35",
+      "title": "Partner accept/reject workflow with rejection counter and rejection tab",
+      "synonyms": [
+        "Ada Pekerjaan Baru",
+        "Terima/Tolak",
+        "PartnerRejectedWorkTab"
+      ],
+      "description": "Assigned tasks appear in Partner \"Ada Pekerjaan Baru\" where the Partner can accept or reject. Rejections route back to Asistenmu \"Partner Menolak Tugas\" and increment a cumulative rejection counter shown in Partner \"Menolak Pekerjaan\"/stats.",
+      "reqIds": [
+        "AR-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-36",
+      "title": "QA + revision loop between Partner and Asistenmu",
+      "synonyms": [
+        "Permintaan QA",
+        "Permintaan Revisi",
+        "AsistenmuQARequestsTab",
+        "PartnerRevisionRequestsTab"
+      ],
+      "description": "Partner can request QA; Asistenmu sees tasks in \"Permintaan QA\" and can either mark Selesai or send Revisi with required revision details that appear for the Partner under \"Permintaan Revisi\".",
+      "reqIds": [
+        "AR-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-37",
+      "title": "Partner earnings calculation and Pendapatan tab display",
+      "synonyms": [
+        "PartnerEarningsTab",
+        "jam efektif × rate per jam"
+      ],
+      "description": "When Asistenmu marks a task selesai, the system computes earnings as jam efektif × partner hourly rate from the Partner profile, stores the Rupiah amount exactly once per task, and displays it in the Partner \"Pendapatan\" tab.",
+      "reqIds": [
+        "AR-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-38",
+      "title": "Fix Admin Layanan SubscriptionsTable SelectItem empty-string crash",
+      "synonyms": [
+        "SelectItem value sentinel",
+        "Layanan tab crash fix"
+      ],
+      "description": "Updates the Admin Dashboard > Layanan > SubscriptionsTable filter dropdowns to avoid shadcn/ui SelectItem value=\"\" by using a non-empty sentinel (e.g., \"all\") and mapping that selection to undefined/no-filter values so the tab opens without runtime error.",
+      "reqIds": [
+        "REQ-10",
+        "REQ-17",
+        "REQ-26",
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-39",
+      "title": "Increase Admin Layanan subscription list page size to 25",
+      "synonyms": [
+        "getFilteredServices pageSize 25",
+        "subscriptions pagination 25"
+      ],
+      "description": "Updates backend getFilteredServices pagination so ServicePage.pageSize is 25 (instead of 10) and slicing/pagination metadata reflect the new page size for the Admin Layanan subscription list.",
+      "reqIds": [
+        "REQ-11",
         "REQ-18"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-router-routes-for-the-client-and-asistenmu-dashboards-e-g-client-and-asistenmu-and-connect-navigation-redirect-behavior-so-authenticated-users-can-reach-their-correct-dashboard-without-editing-immutable-authentication-hook-files",
-      "title": "Add router routes for the Client and Asistenmu dashboards (e.g., /client and /asistenmu) and connect navigation/redirect behavior so authenticated users can reach their correct dashboard without editing immutable authentication hook files.",
+      "id": "IF-40",
+      "title": "Revamped Client Dashboard profile section (Indonesian UI) with generated Client ID + copy actions",
+      "synonyms": [
+        "ClientProfileSection",
+        "clientIds",
+        "CA-XXXXXX client id"
+      ],
+      "description": "Client dashboard profile UI updated to Indonesian layout requirements: header/footer adjustments, a collapsible Profile section showing a generated read-only Client ID (CA-XXXXXX) with copy button, full PrincipalId with copy button, editable contact fields (name/email/whatsapp/company optional), and read-only subscription status with edit/update actions.",
       "reqIds": [
-        "REQ-19"
+        "AR-142"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-41",
+      "title": "Collapsible Client dashboard sections and request summary cards",
+      "synonyms": [
+        "CollapsibleSection",
+        "ClientRequestSummaryCards"
+      ],
+      "description": "Client dashboard sections (Profile, Permintaan, Service Request) are collapsible; adds request/Permintaan summary cards sourced from existing Permintaan tabs data and displayed below the profile section.",
+      "reqIds": [
+        "AR-142"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-42",
+      "title": "Domain-role route protection for dashboards and admin routes",
+      "synonyms": [
+        "RequireDomainRole",
+        "domain role guard",
+        "route protection"
+      ],
+      "description": "Adds explicit route guarding based on the app’s domain roles (client/partner/asistenmu/admin) so direct URL navigation cannot access protected pages (e.g., /admin) unless the caller has the required domain role; integrates with RoleRouter navigation behavior.",
+      "reqIds": [
+        "AR-145"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-43",
+      "title": "Safe actor initialization to prevent UI hangs during authorization bootstrap",
+      "synonyms": [
+        "useSafeActor",
+        "safe actor/agent init"
+      ],
+      "description": "Introduces a safer actor initialization path to avoid app-wide loading deadlocks when backend access-control bootstrap/authorization initialization traps or fails, ensuring React Query hooks can mount and run requests reliably.",
+      "reqIds": [
+        "AR-144",
+        "AR-145"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-44",
+      "title": "Fix Client dashboard infinite loading where no canister requests fire",
+      "synonyms": [
+        "blank spinner fix",
+        "/client loading fix"
+      ],
+      "description": "Resolves the /client blank infinite loading spinner regression by ensuring actor/agent initialization completes and React Query hooks execute, so the Client dashboard loads and backend queries are actually fired.",
+      "reqIds": [
+        "AR-144"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-45",
+      "title": "Repository build-template scaffolding for ICP deployment/export",
+      "synonyms": [
+        "build-template",
+        "github-export-icp-cli",
+        "deploy.sh",
+        "icp.yaml"
+      ],
+      "description": "Adds a maintained build-template directory (backend/frontend canister yamls, deploy script, Dockerfile, workspace/package configs, and helper scripts) intended to support repeatable packaging/export and deployment of the app to ICP using CLI tooling.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-46",
+      "title": "Landing page UI redesign (calm/tidy style) while preserving CTAs",
+      "synonyms": [
+        "LandingPage redesign",
+        "AR-148 landing page update"
+      ],
+      "description": "Updates the public landing page visual design and structure (HTML/CSS/React) while keeping it publicly accessible and preserving the existing primary CTAs (e.g., Internet Identity login and partner join/apply links).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-47",
+      "title": "Fix login button no-op / post-login unresponsive regression",
+      "synonyms": [
+        "dashboard login button does nothing",
+        "post-login app becomes unresponsive"
+      ],
+      "description": "Resolves regressions where the login button appeared clickable but did not trigger login and/or the app became unresponsive after login/navigation, restoring expected interactive behavior across routes.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-landing-page-and-partner-apply-page-styling-to-remove-any-dark-gray-backgrounds-and-replace-them-with-a-brighter-light-gray-background-across-all-sections-including-the-partner-registration-application-form",
+      "title": "Update the Landing Page and Partner Apply page styling to remove any dark gray backgrounds and replace them with a brighter light-gray background across all sections, including the partner registration/application form.",
+      "reqIds": [
+        "REQ-110"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-make-the-landing-page-header-visually-transparent-no-solid-background-fill-while-preserving-readability-and-spacing-for-header-contents",
+      "title": "Make the landing page header visually transparent (no solid background fill), while preserving readability and spacing for header contents.",
+      "reqIds": [
+        "REQ-111"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-unify-the-styling-of-all-cta-buttons-across-the-public-pages-so-they-match-the-current-masuk-login-button-color-and-ensure-cta-button-text-is-white",
+      "title": "Unify the styling of all CTA buttons across the public pages so they match the current “Masuk” (Login) button color, and ensure CTA button text is white.",
+      "reqIds": [
+        "REQ-112"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-change-the-service-layanan-cards-so-that-1-the-user-s-service-card-background-is-white-with-a-thin-border-and-2-the-menanggung-sendiri-card-background-is-also-white-with-a-thin-border",
+      "title": "Change the Service/Layanan cards so that (1) the user’s Service card background is white with a thin border, and (2) the “Menanggung sendiri” card background is also white with a thin border.",
+      "reqIds": [
+        "REQ-113"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-the-landing-page-section-that-contains-the-detailed-bergabung-dengan-asistenku-card-update-that-detail-card-to-use-a-white-background-consistent-with-the-other-white-cards-and-avoid-dark-gray-fills",
+      "title": "In the landing page section that contains the detailed “Bergabung dengan Asistenku” card, update that detail card to use a white background (consistent with the other white cards) and avoid dark gray fills.",
+      "reqIds": [
+        "REQ-114"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-increase-the-size-of-the-asistenku-logo-in-the-landing-page-header-using-the-existing-logo-asset-moving-it-visually-closer-to-the-header-boundary-while-keeping-comfortable-top-and-bottom-margins",
+      "title": "Increase the size of the Asistenku logo in the landing page header using the existing logo asset, moving it visually closer to the header boundary while keeping comfortable top and bottom margins.",
+      "reqIds": [
+        "REQ-115"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-footer-logo-centered-above-the-first-footer-text-column-content-using-the-existing-header-mobile-logo-asset-reuse-the-same-asset-used-for-the-header-in-mobile-view",
+      "title": "Add a footer logo centered above the first footer text column content, using the existing header mobile logo asset (reuse the same asset used for the header in mobile view).",
+      "reqIds": [
+        "REQ-116"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-footer-copyright-line-to-exactly-asistenku-2026-pt-asistenku-digital-indonesia",
+      "title": "Update the footer copyright line to exactly: “Asistenku © 2026 - PT Asistenku Digital Indonesia”.",
+      "reqIds": [
+        "REQ-117"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-header-styling-on-the-landing-page-and-all-dashboard-pages-admin-client-asistenmu-partner-to-use-a-white-header-with-slight-transparency-a-subtle-bottom-divider-and-a-backdrop-blur-effect-so-underlying-content-remains-visible-while-header-text-stays-readable-during-scroll-avoid-heavy-drop-shadows",
+      "title": "Update the header styling on the Landing page and all dashboard pages (Admin, Client, Asistenmu, Partner) to use a white header with slight transparency, a subtle bottom divider, and a backdrop blur effect so underlying content remains visible while header text stays readable during scroll. Avoid heavy drop shadows.",
+      "reqIds": [
+        "REQ-118"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-adjust-the-landing-page-hero-headline-typography-so-it-renders-as-exactly-two-lines-one-sentence-per-line-with-a-smaller-font-size-and-update-the-headline-text-casing-to-match-the-requested-two-line-copy",
+      "title": "Adjust the Landing page hero headline typography so it renders as exactly two lines (one sentence per line) with a smaller font size, and update the headline text casing to match the requested two-line copy.",
+      "reqIds": [
+        "REQ-119"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-all-masuk-login-buttons-across-the-app-so-they-correctly-trigger-the-internet-identity-ii-login-flow-restoring-previous-behavior-using-the-existing-internet-identity-hook-logic-without-editing-immutable-authentication-hook-files",
+      "title": "Fix all \"Masuk\" / login buttons across the app so they correctly trigger the Internet Identity (II) login flow (restoring previous behavior), using the existing Internet Identity hook/logic without editing immutable authentication hook files.",
+      "reqIds": [
+        "REQ-120"
       ],
       "version": 1
     }
@@ -388,20 +709,8 @@
       "status": "in_progress"
     },
     {
-      "id": "AR-6",
-      "summary": "Restore/standardize Admin Dashboard UI layout into the previous tabbed structure for all panels (Summary, Partner pending/registration, Asistenmu creation, Clients, and Layanan) and use the same tab pattern for future admin features",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
       "id": "AR-7",
       "summary": "Implement nested sub-tabs inside the Admin Dashboard \"Layanan\" tab and align the overall Admin tab layout/styling to match the user-provided reference image (top tabs for all admin features; Layanan has internal sub-tabs).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-8",
-      "summary": "Add remaining Admin Dashboard top-level tabs as shown in the reference image; for features not implemented yet, create read-only/placeholder tabs (read mode) to be filled later",
       "reqIds": [],
       "status": "pending"
     },
@@ -508,99 +817,860 @@
       "status": "pending"
     },
     {
-      "id": "AR-23",
-      "summary": "Implement simplified MVP Permintaan flow (Client form → AM handling via active Layanan assignment → AM status dropdown: Dalam Proses Pengerjaan / Meminta Review Client with optional GDrive link → Client can Revisi with revision details or Selesai with confirmation → both dashboards show Permintaan Selesai)",
+      "id": "AR-32",
+      "summary": "Activate an Audit Log feature to record and display action logs (who did what/when) in the admin dashboard",
       "reqIds": [],
       "status": "pending"
     },
     {
-      "id": "AR-24",
-      "summary": "Gate Client \"Buat Permintaan\" CTA: only enable/allow request creation if the client has an active Layanan/subscription on their profile",
+      "id": "AR-33",
+      "summary": "Update admin list search + filters to match available backend data fields (no UI-only filters)",
       "reqIds": [],
       "status": "pending"
     },
     {
-      "id": "AR-25",
-      "summary": "Add client-side gating UX for \"Buat Permintaan\": disable unless client has at least 1 layanan and an active layanan; show warning text \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\" when gated",
+      "id": "AR-34",
+      "summary": "Increase admin list pagination page size to max 25 items per page (where lists are paginated)",
       "reqIds": [],
       "status": "pending"
     },
     {
-      "id": "AR-23",
-      "summary": "Implement simplified MVP Permintaan flow (Client form → AM handling via active Layanan assignment → AM status dropdown: Dalam Proses Pengerjaan / Meminta Review Client with optional GDrive link → Client can Revisi with revision details or Selesai with confirmation → both dashboards show Permintaan Selesai)",
+      "id": "AR-35",
+      "summary": "Extend Partner domain rules/UI: partner statuses (#aktif/#rejected/#suspended/#blacklist) with blacklist redirect to a blocked page message; partner level mapping (junior/senior/expert) to hourly rates (35000/55000/75000) and enforce/display hourly rate options accordingly",
       "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-24",
-      "summary": "Gate Client \"Buat Permintaan\" CTA: only enable/allow request creation if the client has an active Layanan/subscription on their profile",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-25",
-      "summary": "Add client-side gating UX for \"Buat Permintaan\": disable unless client has at least 1 layanan and an active layanan; show warning text \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\" when gated",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-26",
-      "summary": "Add a new backend domain model for an MVP “Service Request/Permintaan” that supports: (1) Client creates a request (title, details, optional deadline date), (2) Asistenmu updates request state via a dropdown (In Progress / Request Client Review), optionally storing a Google Drive link when requesting review, (3) Client can either request a revision (mandatory revision details) or mark the request complete (with confirmation). Ensure requests persist in canister state without removing or breaking existing users/subscriptions/service logic.",
-      "reqIds": [
-        "REQ-10"
-      ],
       "status": "pending"
     },
     {
-      "id": "AR-27",
-      "summary": "Implement backend assignment resolution so that when a Client creates a request, it is routed to the Asistenmu assigned through the Client’s active Layanan/subscription (not from any field manually set on the request). If the Client has no active subscription with an assigned Asistenmu, the backend must reject request creation with a clear error.",
-      "reqIds": [
-        "REQ-11"
-      ],
+      "id": "AR-36",
+      "summary": "Admin sets Partner level + hourly rate when activating/accepting partner applications; allow edits only while partner status is #aktif; Partner profile shows level read-only next to partner status",
+      "reqIds": [],
       "status": "pending"
     },
     {
-      "id": "AR-28",
-      "summary": "Add backend APIs (queries + mutations) for the MVP request flow with role-based authorization: Client: create request, list own requests by client-facing tabs, submit revision (with mandatory revision details), mark complete; Asistenmu: list requests assigned via subscriptions, update request status (In Progress / Request Client Review), set/clear review link when requesting review. Enforce that Client actions are only allowed in the review stage, and Asistenmu actions are not allowed after completion.",
+      "id": "AR-37",
+      "summary": "Derive Partner hourly rate automatically from selected Partner level (junior/senior/expert) per fixed mapping; remove/avoid independent hourly-rate selection and enforce mapping in backend + UI",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-40",
+      "summary": "Implement an Admin Audit Log feature that records action history in the backend and displays it in the Admin Dashboard 'Audit' tab. The log must capture: who performed the action (caller Principal), what action occurred (action type), when it occurred (timestamp), and relevant target identifiers (e.g., subscription id, request id, partner principal). Provide an admin-only paginated query endpoint to list audit entries with page size 25 and basic search/filter aligned to available backend fields (do not add UI-only filters).",
       "reqIds": [
         "REQ-12"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-29",
-      "summary": "Add backend endpoints to support Client-side gating of the “Create Request (Buat Permintaan)” CTA by returning the caller’s subscription/service summary, including: total subscription count and active subscription count (and whether an active subscription has an assigned Asistenmu). This must be callable by the Client (not admin-only).",
+      "id": "AR-41",
+      "summary": "Expand Partner status rules across backend + frontend: add partner statuses `active`, `rejected`, `suspended`, and `blacklist` (in addition to pending if still needed). Enforce access blocking for blacklisted partners by redirecting them to a dedicated page that only shows the English text: \"Sorry you can no longer access your account.\"",
       "reqIds": [
         "REQ-13"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-42",
+      "summary": "Add Partner level and hourly-rate mapping rules. Define partner levels `junior`, `senior`, `expert` with fixed hourly rates: junior=35000, senior=55000, expert=75000. Hourly rate must not be manually selectable; it must be derived from the selected level in backend and frontend.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-43",
+      "summary": "Update the Admin Partner approval workflow so that when an admin accepts/activates a pending partner, the admin must select the partner level (junior/senior/expert) as part of approval, and the backend sets status to active and stores the level. Add admin ability to edit partner level only when the partner status is active; disallow editing level for any non-active status.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-44",
+      "summary": "Update the Partner profile display so it shows only the Partner level (read-only) next to the Partner status. Do not allow partners to edit their level or hourly rate from their dashboard/profile UI.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-45",
+      "summary": "Update blacklisted Partner access-blocked page copy to Indonesian text: \"Maaf anda sudah tidak bisa mengakses akun anda lagi.\" (redirect/blocked page shown when partner status is blacklist)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-48",
+      "summary": "Implement an Audit Log feature in the backend that records action history and can be displayed in the Admin Dashboard. The audit entry must include: timestamp, actor/caller Principal, action type, and relevant target identifiers (at minimum: subscription id, request/task id, partner principal as applicable). Add an admin-only paginated query endpoint to list audit entries with page size 25, with search/filter only on fields that exist in the audit entry model (do not add UI-only filters).",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-49",
+      "summary": "Add an Admin Dashboard UI panel/tab that displays the Audit Log list from the backend endpoint, including: who (Principal), what (action type), when (formatted timestamp), and target identifiers. Provide basic search/filter controls that map directly to the backend audit log query fields. Use 25 items per page and show pagination controls when multiple pages exist.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-50",
+      "summary": "Extend the backend Partner domain model and rules: (1) Expand PartnerStatus to include `active`, `rejected`, `suspended`, and `blacklist` (keep `pending` for applicants). (2) Add PartnerLevel values `junior`, `senior`, `expert` and store it in partner data. (3) Derive partner hourly rate from level using the fixed mapping: junior=35000, senior=55000, expert=75000; hourly rate must not be independently settable. Update any existing logic that reads/writes `PartnerProfile.hourlyRate` so it is consistent with the derived mapping.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-51",
+      "summary": "Update the admin partner approval + management workflow so that: when an admin approves/activates a pending partner, the admin must select the partner level (junior/senior/expert) and the backend sets status to `active` and stores the level. Admin can edit partner level only when the partner status is `active`; attempts to edit level for non-active partners must be rejected by backend authorization/validation rules.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-52",
+      "summary": "Implement blacklist access blocking for Partner users. If a partner’s status is `blacklist`, prevent them from accessing the Partner dashboard and redirect them to a dedicated blocked page that only shows the Indonesian text: \"Maaf anda sudah tidak bisa mengakses akun anda lagi.\" (no additional UI text).",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-53",
+      "summary": "Update the Partner dashboard/profile display so that the partner’s level is shown read-only next to the partner status (partners cannot edit level or hourly rate). Ensure the displayed hourly rate (if shown elsewhere such as earnings calculations) is consistent with the level mapping and backend-derived value.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-54",
+      "summary": "Align admin search and filter UI for lists touched by this request (Subscriptions list and Audit Log list) strictly to fields supported by the backend endpoints. Remove or avoid any filter UI that cannot be executed by the backend query (no client-side-only filters that imply backend support).",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-56",
+      "summary": "Extend the backend Partner domain model to support the requested Partner statuses and Partner level → derived hourly rate mapping. Update `backend/main.mo` to: (1) expand `PartnerStatus` to include `pending`, `active`, `rejected`, `suspended`, and `blacklist`; (2) add a `PartnerLevel` enum with `junior`, `senior`, `expert`; (3) store partner level in the partner domain data; (4) derive `hourlyRate` automatically from level using the fixed mapping (junior=35000, senior=55000, expert=75000) and prevent any API from setting hourly rate independently of level; (5) ensure any earnings calculation uses the derived hourly rate consistent with the stored level.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-57",
+      "summary": "Update the Admin partner approval/management flow so an admin must choose Partner level when activating/accepting a pending partner, and admins can edit the partner level only while the partner status is `active`. Enforce these rules in the backend with validation/authorization checks, and update the Admin UI so that: (1) approving a pending partner requires selecting level (junior/senior/expert); (2) level editing controls are disabled/hidden for non-active partners; (3) no UI allows manual hourly-rate selection (it is shown as derived/read-only if displayed).",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-58",
+      "summary": "Implement Partner access blocking for the `blacklist` status and update Partner profile display requirements. Frontend must: (1) prevent blacklisted partners from accessing the Partner dashboard by redirecting to a dedicated blocked page; (2) the blocked page must render only this exact text (and no additional text): \"Maaf anda sudah tidak bisa mengakses akun anda lagi.\"; (3) in the Partner dashboard/profile area, display the partner level read-only next to the partner status (partners cannot edit level or hourly rate). Backend must enforce that blacklisted partners cannot perform partner-only actions (e.g., accept/reject offers, request QA, save partner profile if applicable).",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-60",
+      "summary": "Extend the backend Partner domain model to support partner statuses and partner level → derived hourly rate mapping. Update `backend/main.mo` so that: (1) `PartnerStatus` supports at least `pending`, `active`, `rejected`, `suspended`, and `blacklist`; (2) add a `PartnerLevel` enum with `junior`, `senior`, `expert`; (3) store partner level in partner domain data; (4) derive `hourlyRate` automatically from level using the fixed mapping junior=35000, senior=55000, expert=75000; (5) prevent any API from setting hourly rate independently of level; (6) ensure any logic that uses hourly rate (e.g., partner search, earnings calculation) uses the derived value consistently.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-61",
+      "summary": "Update Partner profile APIs so the hourly rate cannot be manually edited and remains aligned with level. Specifically, update any backend method that persists partner profile data (e.g., `savePartnerProfile`) to reject or ignore attempts to change hourly rate directly, and ensure the stored/returned partner profile reflects the derived hourly rate for the current level.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-62",
+      "summary": "Implement blacklist access blocking for Partner users. Backend must prevent blacklisted partners from performing partner-only actions (e.g., accept/reject offers, request QA, save partner profile). Frontend must prevent access to the Partner dashboard for blacklisted partners by redirecting them to a dedicated blocked page that renders only this exact text (and no additional UI text): \"Maaf anda sudah tidak bisa mengakses akun anda lagi.\"",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-63",
+      "summary": "Update the Partner dashboard/profile display so it shows the partner status and partner level read-only, and does not provide any UI to manually select or edit hourly rate. Hourly rate, if displayed anywhere, must be consistent with the derived mapping from level.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-64",
+      "summary": "Add backend upgrade/migration support (only if required by the type changes) so existing partner records continue to load. Ensure existing partners with the old `PartnerStatus` and any existing hourly rate data are mapped to the new model safely (e.g., infer level from existing hourlyRate when possible, otherwise default to `junior`), and ensure the derived hourly rate is correct post-migration.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-65",
+      "summary": "Update the backend partner domain model in `backend/main.mo` to support expanded Partner statuses and Partner level → derived hourly-rate mapping: (1) expand `PartnerStatus` to include at least `pending`, `active`, `rejected`, `suspended`, and `blacklist`; (2) add a `PartnerLevel` enum with `junior`, `senior`, `expert`; (3) store partner level in partner domain data; (4) derive partner hourly rate automatically from level using the fixed mapping junior=35000, senior=55000, expert=75000; (5) ensure hourly rate is not independently settable by any API and is always returned consistent with the level mapping.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-66",
+      "summary": "Implement backend validation/authorization rules for partner level and status changes: (1) when an admin activates/approves a pending partner, the admin must provide a partner level (junior/senior/expert) and the backend sets status to `active` and stores the level; (2) admins may edit partner level only while partner status is `active`; attempts to edit level for any non-active partner must be rejected; (3) ensure any earnings calculation and partner-search hourly-rate logic uses the backend-derived hourly rate consistent with the stored level.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-67",
+      "summary": "Enforce blacklist access blocking and action blocking: if a partner’s status is `blacklist`, backend must prevent the partner from performing partner-only actions (at minimum: accept/reject offers, request QA, save partner profile, and any partner task listing endpoints), and the frontend must prevent access to the Partner dashboard by redirecting blacklisted partners to a dedicated blocked page.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-68",
+      "summary": "Add a dedicated frontend blocked page for blacklisted partners that renders only this exact text (and no additional UI text): \"Maaf anda sudah tidak bisa mengakses akun anda lagi.\"",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-69",
+      "summary": "Update the Partner dashboard/profile display so it shows partner status and partner level read-only (partners cannot edit level or hourly rate). If hourly rate is shown anywhere in the Partner UI, it must reflect the backend-derived mapping from the stored level.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-70",
+      "summary": "Update the Admin partner approval/management UI so that approving/activating a pending partner requires selecting the partner level (junior/senior/expert), and any UI for editing partner level is enabled only when the partner status is `active`. Do not provide any UI that allows manual hourly-rate selection.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-71",
+      "summary": "Add backend upgrade/migration support (only if required by the type changes) so existing partner records continue to load after deployment. Ensure existing partners with old statuses and any existing hourly-rate data are safely mapped to the new model (e.g., infer level from existing hourlyRate when possible, otherwise default to `junior`) and ensure the derived hourly rate is correct post-migration.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-72",
+      "summary": "Extend the backend partner status model to support these statuses: `pending`, `active`, `rejected`, `suspended`, `blacklist` (keeping `pending` for applicants). Ensure the status is persisted as part of the partner’s domain role and is returned to the frontend in any identity/role APIs used by the UI.",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-73",
+      "summary": "Add a Partner Level domain concept with values `junior`, `senior`, `expert`, and enforce a fixed level-to-hourly-rate mapping in the backend: junior=35000, senior=55000, expert=75000. Hourly rate must not be manually settable by any caller; it must be derived from the stored level and returned consistently wherever partner hourly rate is exposed.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-74",
+      "summary": "Update backend admin partner approval/activation and management rules: when an admin activates/approves a pending partner, the admin must provide the partner level (junior/senior/expert), and the backend must set status to `active`, store the level, and derive hourly rate automatically. Admins may change partner level only when the partner status is `active`; attempts to change level for non-active partners must be rejected by backend validation.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-75",
+      "summary": "Prevent partners from changing their own level or hourly rate via backend APIs. Specifically, update any partner profile persistence method (e.g., `savePartnerProfile`) so it rejects or ignores changes to level/hourly rate coming from the partner, and ensure the stored/returned profile remains aligned with the backend-derived hourly rate for the stored level.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-76",
+      "summary": "Enforce blacklist access blocking in the backend: if a partner’s status is `blacklist`, block partner-only actions at minimum for: listing partner tasks/requests, accepting offers, rejecting offers, requesting QA, and saving partner profile. Calls from blacklisted partners must fail with an authorization/validation error rather than performing the action.",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-77",
+      "summary": "Ensure partner earnings calculation always uses the hourly rate derived from partner level (not any manually stored rate). Update the backend task completion earnings calculation so it uses the backend-derived hourly rate for the partner’s current level at the time earnings are computed.",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-78",
+      "summary": "Update the admin frontend partner approval/management UI so that approving/activating a pending partner requires selecting a partner level (junior/senior/expert). Remove or avoid any UI control that allows manual hourly-rate selection; if hourly rate is displayed, it must be shown as derived/read-only based on the selected level. Also ensure level editing controls are only enabled/visible when partner status is `active`.",
+      "reqIds": [
+        "REQ-49"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-79",
+      "summary": "Update the partner frontend dashboard/profile area to display partner status and partner level as read-only (no partner-side editing of level or hourly rate). If hourly rate is displayed (e.g., in earnings), it must reflect the backend-derived mapping for the stored level.",
+      "reqIds": [
+        "REQ-50"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-80",
+      "summary": "Implement frontend access blocking for blacklisted partners: when the authenticated user is a partner with status `blacklist`, prevent access to the Partner dashboard route and redirect them to a dedicated blocked page that renders only this exact text (and no additional UI text): \"Maaf anda sudah tidak bisa mengakses akun anda lagi.\"",
+      "reqIds": [
+        "REQ-51"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-81",
+      "summary": "Ensure backend and frontend remain consistent in applying the level → hourly rate mapping across all areas where partner rate is referenced (at minimum: earnings calculation, partner profile display, and partner search). Remove or avoid any code paths that treat hourly rate as an independent editable input.",
+      "reqIds": [
+        "REQ-52"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-82",
+      "summary": "Add backend upgrade/migration support only if required by the type changes, so existing partner records continue to load after deployment. If legacy partner data includes an hourly rate, infer the level from the legacy hourly rate when possible; otherwise default to `junior`. After migration, hourly rate must be overridden to match the fixed mapping for the inferred/default level.",
+      "reqIds": [
+        "REQ-53"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-83",
+      "summary": "Update Admin tab Partner sesuai detail yang dibahas sebelumnya, dan tambahkan summary cards untuk Partner Suspended serta Partner Blacklisted",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-84",
+      "summary": "Implement Admin Dashboard Partner tab per previously agreed partner rules: apply full PartnerStatus + PartnerLevel→hourlyRate mapping; add summary cards for Suspended and Blacklisted; provide list views per status (Pending/Active/Suspended/Blacklist) with pagination + search; enforce action buttons per status (Pending: Aktifkan+Reject; Aktif: Suspend+Blacklist; Suspended: Reaktivasi+Blacklist; Blacklist: no actions).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-85",
+      "summary": "Extend the backend Partner domain model to support PartnerStatus values: `pending`, `active`, `rejected`, `suspended`, `blacklist` (keep `pending` for applicants), and ensure Partner status is persisted and returned in any partner/admin-facing APIs used by the frontend.",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-86",
+      "summary": "Add PartnerLevel values `junior`, `senior`, `expert` to the backend partner data, and enforce a fixed level → hourly-rate mapping in the backend: junior=35000, senior=55000, expert=75000. Hourly rate must not be independently settable by any API; it must be derived from the stored level and returned consistently wherever partner hourly rate is exposed.",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-87",
+      "summary": "Update backend admin partner approval/activation so that when an admin activates a pending partner, the admin must provide the partner level (`junior`/`senior`/`expert`), and the backend sets partner status to `active`, stores the level, and derives hourly rate automatically from the mapping.",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-88",
+      "summary": "Enforce backend validation rules for partner level changes: admins can change partner level only when partner status is `active`; attempts to change level for partners in `pending`, `rejected`, `suspended`, or `blacklist` must be rejected.",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-89",
+      "summary": "Implement backend authorization/validation blocking for blacklisted partners: if a partner’s status is `blacklist`, backend must prevent partner-only actions at minimum for accepting offers, rejecting offers, requesting QA, listing partner tasks/requests, and saving partner profile (if applicable). Calls must fail without performing the action.",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-90",
+      "summary": "Ensure partner earnings calculations always use the backend-derived hourly rate from PartnerLevel (junior/senior/expert mapping), not any manually stored or user-provided rate, including when earnings are computed/stored at task completion.",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-91",
+      "summary": "Add backend admin partner listing/query endpoints (or extend existing ones) to support the Admin Partner tab for each status (Pending/Active/Suspended/Blacklist): server-side pagination and server-side search. Also expose counts needed for summary cards (Pending, Active, Suspended, Blacklisted).",
+      "reqIds": [
+        "REQ-60"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-92",
+      "summary": "Add backend admin actions for partner status transitions matching the agreed rules: Pending → (Activate, Reject); Active → (Suspend, Blacklist); Suspended → (Reactivate to Active, Blacklist). Blacklisted partners have no further actions. Enforce these transitions in backend validation.",
+      "reqIds": [
+        "REQ-61"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-93",
+      "summary": "Add backend upgrade/migration support (conditional; only if required by the type/state changes) so existing partner records continue to load after deployment. If legacy partner data includes an hourly rate, infer level from that value when it matches known mapping (35000/55000/75000); otherwise default level to `junior`. After migration, hourly rate must be overridden/returned according to the fixed mapping for the inferred/default level.",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-94",
+      "summary": "Update the Admin Dashboard Partner tab UI to implement the full partner rules: show separate list views for each status (Pending, Active, Suspended, Blacklisted) with server-backed pagination and search, and add summary cards for Suspended and Blacklisted alongside existing cards (matching the existing summary-card style).",
+      "reqIds": [
+        "REQ-63"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-95",
+      "summary": "Implement the agreed action buttons per partner status in the Admin Partner tab UI, and wire them to backend mutations with appropriate confirmations and loading/error states: Pending shows Activate + Reject; Active shows Suspend + Blacklist; Suspended shows Reactivate + Blacklist; Blacklisted shows no action buttons.",
+      "reqIds": [
+        "REQ-64"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-96",
+      "summary": "When activating a pending partner in the Admin UI, require the admin to select a PartnerLevel (`junior`/`senior`/`expert`) as part of the activation flow. The UI must not provide any manual hourly-rate input; if hourly rate is displayed, it must be shown as derived/read-only from the selected level.",
+      "reqIds": [
+        "REQ-65"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-97",
+      "summary": "Allow admins to edit a partner’s level only when the partner status is `active`. In the Admin UI, level editing controls must be hidden or disabled for non-active partners, and backend errors must be surfaced if a non-active edit is attempted.",
+      "reqIds": [
+        "REQ-66"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-98",
+      "summary": "Implement frontend access blocking for blacklisted partners: if the authenticated user is a partner with status `blacklist`, prevent access to the Partner dashboard route(s) and redirect to a dedicated blocked page that renders only the exact text: \"Maaf anda sudah tidak bisa mengakses akun anda lagi.\" (no additional UI text).",
+      "reqIds": [
+        "REQ-67"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-99",
+      "summary": "Update the Partner dashboard/profile UI to display Partner status and Partner level as read-only (no partner-side editing of level or hourly rate). If hourly rate is shown anywhere in the Partner UI (e.g., earnings), it must reflect the backend-derived mapping for the stored level.",
+      "reqIds": [
+        "REQ-68"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-100",
+      "summary": "Add/extend centralized React Query hooks to support the updated Admin Partner tab: partner counts query, status-based partner list queries (with pagination + search), and partner admin action mutations (activate with level, reject, suspend, reactivate, blacklist), including correct query invalidations so lists and counts refresh after mutations.",
+      "reqIds": [
+        "REQ-69"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-101",
+      "summary": "Implement an automatic two-stage build execution mode that runs the backend changes first and only proceeds to the frontend changes after the backend stage completes successfully, without requiring the user to manually split the request.",
+      "reqIds": [
+        "REQ-70"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-102",
+      "summary": "Ensure all user-facing status/progress text shown during the two-stage build execution is in English and clearly labels the stages as \"Backend\" and \"Frontend\".",
+      "reqIds": [
+        "REQ-71"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-103",
+      "summary": "When the build request payload is large/complex, automatically partition the generated implementation work into a backend-only chunk and a frontend-only chunk (preserving the original requested feature scope), and execute them in the two-stage order.",
+      "reqIds": [
+        "REQ-72"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-104",
+      "summary": "Extend the backend Partner domain model in `backend/main.mo` to support PartnerStatus values: `pending`, `active`, `rejected`, `suspended`, `blacklist`, and ensure partner status is persisted and returned by backend APIs used by admin/partner UIs.",
+      "reqIds": [
+        "REQ-73"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-105",
+      "summary": "Add PartnerLevel values `junior`, `senior`, `expert` to the backend partner data model, and enforce a fixed level → hourly-rate mapping in the backend: junior=35000, senior=55000, expert=75000. Hourly rate must not be independently settable by any API; it must be derived from the stored level and returned consistently wherever partner hourly rate is exposed.",
+      "reqIds": [
+        "REQ-74"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-106",
+      "summary": "Update backend admin partner approval/activation so that when an admin activates a pending partner, the admin must provide the partner level (`junior`/`senior`/`expert`), and the backend sets partner status to `active`, stores the level, and derives hourly rate automatically from the mapping.",
+      "reqIds": [
+        "REQ-75"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-107",
+      "summary": "Enforce backend validation rules for partner level changes: admins can change partner level only when partner status is `active`; attempts to change level for partners in `pending`, `rejected`, `suspended`, or `blacklist` must be rejected.",
+      "reqIds": [
+        "REQ-76"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-108",
+      "summary": "Add backend admin actions for partner status transitions matching the agreed rules and enforce them with validation: Pending → (Activate, Reject); Active → (Suspend, Blacklist); Suspended → (Reactivate to Active, Blacklist). Blacklisted partners have no further transitions via admin actions.",
+      "reqIds": [
+        "REQ-77"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-109",
+      "summary": "Implement backend authorization/validation blocking for blacklisted partners: if a partner’s status is `blacklist`, backend must prevent partner-only actions at minimum for accepting offers, rejecting offers, requesting QA, listing partner tasks/requests, and saving partner profile (if applicable). Calls must fail without performing the action.",
+      "reqIds": [
+        "REQ-78"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-110",
+      "summary": "Ensure partner earnings calculations always use the backend-derived hourly rate from PartnerLevel (junior/senior/expert mapping), not any manually stored or user-provided rate, including when earnings are computed/stored at task completion.",
+      "reqIds": [
+        "REQ-79"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-111",
+      "summary": "Add backend admin partner listing/query endpoints (or extend existing ones) to support the Admin Partner tab list views for each status (Pending/Active/Suspended/Blacklist): server-side pagination and server-side search. Also expose counts needed for summary cards: Pending, Active, Suspended, Blacklisted.",
+      "reqIds": [
+        "REQ-80"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-112",
+      "summary": "Add backend upgrade/migration support in `backend/migration.mo` only if required by the partner type/state changes. Ensure existing partner records continue to load after deployment. If legacy partner data includes an hourly rate, infer level from that value when it matches known mapping (35000/55000/75000); otherwise default level to `junior`. After migration, hourly rate must be overridden/returned according to the fixed mapping for the inferred/default level.",
+      "reqIds": [
+        "REQ-81"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-113",
+      "summary": "Implement expanded Partner management across backend (Motoko) + frontend (React): PartnerStatus (pending/active/rejected/suspended/blacklist), PartnerLevel (junior/senior/expert) with derived hourlyRate mapping (35000/55000/75000) and no manual rate input; activation defaults level=junior and status=active; admin can edit level only when status=active; partner view is read-only; blacklist redirects to blocked page copy; ensure earnings uses derived rate; migrate legacy hourlyRate to inferred level and override rate by mapping; update admin Partner tab actions + lists (pagination+search).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-114",
+      "summary": "Update the backend Partner domain model in `backend/main.mo` to support the expanded PartnerStatus set: `pending`, `active`, `rejected`, `suspended`, `blacklist` (keeping `pending` for applicants), and ensure the status is persisted as part of the partner role and returned in any identity/role APIs used by the frontend.",
+      "reqIds": [
+        "REQ-82"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-115",
+      "summary": "Add PartnerLevel to the backend partner data model with exactly 3 values: `junior`, `senior`, `expert`, and enforce a fixed derived hourly-rate mapping everywhere in backend logic: junior=35000, senior=55000, expert=75000. Hourly rate must not be independently settable by any caller.",
+      "reqIds": [
+        "REQ-83"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-116",
+      "summary": "Implement backend admin actions/endpoints to manage partner status and level with the following rules: (1) When an admin activates a pending partner, backend automatically sets `status=active` and `level=junior` (hourly rate derived from level). (2) Admin may change partner level only when partner status is `active`; changing level automatically changes derived hourly rate. (3) Provide an endpoint to change partner status (supporting transitions needed by the UI, including setting `blacklist`).",
+      "reqIds": [
+        "REQ-84"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-117",
+      "summary": "Enforce backend access blocking for blacklisted partners: if the authenticated caller is a partner with status `blacklist`, block them from all partner dashboard actions and partner-only APIs (at minimum: listing partner tasks/requests, accept offer, reject offer, request QA, and saving partner profile if applicable). Calls must fail without performing the action.",
+      "reqIds": [
+        "REQ-85"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-118",
+      "summary": "Update backend partner search and any other backend logic that references partner hourly rate (including assignment flows and earnings computation) so it always uses the level → hourlyRate mapping as the source of truth, not any manually stored/entered hourly rate.",
+      "reqIds": [
+        "REQ-86"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-119",
+      "summary": "Add upgrade/migration support (only if required by the type/state changes) in `backend/migration.mo` so existing partner records continue to load. During migration, infer `level` from the previous stored hourly rate when it matches 35000/55000/75000; otherwise default to `junior`. After migration, override/normalize the effective hourly rate to match the new mapping for the inferred/default level.",
+      "reqIds": [
+        "REQ-87"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-120",
+      "summary": "Update the Admin Partner management UI (currently `frontend/src/components/admin/PendingPartnersPanel.tsx` is mock) to use real backend data and support the expanded Partner statuses: show partners grouped/listed by status (at minimum: Pending, Active, Suspended, Blacklisted), with admin actions to activate pending partners, change status, and edit level only for active partners. Remove any manual hourly-rate input; if hourly rate is shown, render it as derived/read-only from the selected/current level.",
+      "reqIds": [
+        "REQ-88"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-121",
+      "summary": "Update the Partner dashboard UI (`frontend/src/pages/PartnerDashboardPage.tsx` and related components) to display Partner status and Partner level as read-only (partners cannot edit level or hourly rate anywhere). Ensure any hourly-rate display (e.g., in earnings) matches the level-derived mapping returned by the backend.",
+      "reqIds": [
+        "REQ-89"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-122",
+      "summary": "Implement frontend access blocking for blacklisted partners: if the authenticated user is a partner with status `blacklist`, prevent access to Partner dashboard routes and redirect to a dedicated blocked page that renders only the exact text: \"Maaf anda sudah tidak bisa mengakses akun anda lagi.\" (no additional UI text).",
+      "reqIds": [
+        "REQ-90"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-123",
+      "summary": "Update the backend Partner domain model in `backend/main.mo` to support the expanded partner statuses: `pending`, `active`, `rejected`, `suspended`, `blacklist`, ensuring the status is persisted and returned by any partner/admin-facing APIs used by the frontend.",
+      "reqIds": [
+        "REQ-91"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-124",
+      "summary": "Add a PartnerLevel concept to the backend with exactly `junior`, `senior`, `expert`, and enforce a fixed level→hourly-rate mapping as the single source of truth everywhere in the backend: `junior=35000`, `senior=55000`, `expert=75000`. No backend API may allow independently setting an hourly rate.",
+      "reqIds": [
+        "REQ-92"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-125",
+      "summary": "Implement backend admin actions/endpoints to manage partner activation, status transitions, and level changes with these rules: (1) When an admin activates a pending partner, backend must set `status=active` and automatically set `level=junior` (hourly rate derived by mapping). (2) Admin may change a partner’s level only when the partner’s status is `active`; changing level must automatically change the derived hourly rate (no manual input). (3) Provide an admin endpoint to update partner status including setting `suspended` and `blacklist`, enforcing valid transitions.",
+      "reqIds": [
+        "REQ-93"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-126",
+      "summary": "Enforce backend access blocking for blacklisted partners: if the authenticated caller is a partner with status `blacklist`, block them from partner-only actions (at minimum: listing partner tasks/requests, accepting offers, rejecting offers, requesting QA, and saving partner profile if applicable). Calls must fail without performing the action.",
+      "reqIds": [
+        "REQ-94"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-127",
+      "summary": "Update all backend logic that references partner hourly rate (including partner search/assignment flows and earnings computation at task completion) to always use the level→hourlyRate mapping as the source of truth, never a manually stored/entered hourlyRate value.",
+      "reqIds": [
+        "REQ-95"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-128",
+      "summary": "If the partner type/state changes require it, add conditional upgrade/migration support in `backend/migration.mo` so existing partner records continue to load. During migration, infer `level` from the previously stored hourly rate when it exactly matches 35000/55000/75000; otherwise default `level=junior`. After migration, normalize the effective hourly rate to the new mapping for the inferred/default level.",
+      "reqIds": [
+        "REQ-96"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-129",
+      "summary": "Update the Admin Partner management UI (currently `frontend/src/components/admin/PendingPartnersPanel.tsx` uses mock data) to use real backend data and support expanded PartnerStatus views for at minimum: Pending, Active, Suspended, Blacklisted. Add summary cards that include Suspended and Blacklisted counts, and provide server-backed pagination and search for each status list.",
+      "reqIds": [
+        "REQ-97"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-130",
+      "summary": "Implement admin actions in the Admin Partner UI and wire them to backend mutations with proper loading/error states and confirmations: Pending → Activate (auto status=active, auto level=junior) and Reject; Active → Suspend and Blacklist; Suspended → Reactivate (to Active) and Blacklist; Blacklisted → no actions.",
+      "reqIds": [
+        "REQ-98"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-131",
+      "summary": "Allow admins to edit a partner’s level only when the partner status is `active`. In the Admin UI, show level as editable only for active partners; for non-active partners it must be read-only/hidden. Any hourly rate shown must be derived/read-only from level, and there must be no manual hourly-rate input anywhere in the Admin UI.",
+      "reqIds": [
+        "REQ-99"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-132",
+      "summary": "Update the Partner dashboard UI (`frontend/src/pages/PartnerDashboardPage.tsx` and related partner components) so Partner level and hourly rate are read-only, and partners cannot change their own level or hourly rate anywhere. Ensure any hourly-rate display (e.g., earnings) matches the backend-derived mapping for the stored level.",
+      "reqIds": [
+        "REQ-100"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-133",
+      "summary": "Implement frontend access blocking for blacklisted partners: when the authenticated user is a partner with status `blacklist`, prevent access to Partner dashboard routes and redirect to a dedicated blocked page that renders only this exact text (and no additional UI text): \"Maaf anda sudah tidak bisa mengakses akun anda lagi.\"",
+      "reqIds": [
+        "REQ-101"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-134",
+      "summary": "Add/extend centralized React Query hooks (in the existing hooks pattern) to support the updated Partner management: admin partner counts, status-based partner list queries (pagination + search), and admin partner action mutations (activate, reject, suspend, reactivate, blacklist, and level update where allowed), including correct query invalidations so lists and counts refresh after mutations.",
+      "reqIds": [
+        "REQ-102"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-135",
+      "summary": "Update the backend partner domain schema in `backend/main.mo` to support the expanded `PartnerStatus` values: `pending`, `active`, `rejected`, `suspended`, and `blacklist` (keeping `pending` for applicants), and ensure this status is persisted in the user’s `UserRole` for partners and is returned by existing identity/role APIs used by the frontend.",
+      "reqIds": [
+        "REQ-103"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-136",
+      "summary": "Add a `PartnerLevel` concept in `backend/main.mo` with exactly 3 values: `junior`, `senior`, `expert`, and enforce a single source-of-truth mapping from level → derived hourly rate everywhere in backend logic: `junior=35000`, `senior=55000`, `expert=75000`. No backend API may accept or persist an independently-set hourly rate.",
+      "reqIds": [
+        "REQ-104"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-137",
+      "summary": "Update the backend `PartnerProfile` data model and related read/write logic in `backend/main.mo` so partner hourly rate is derived from `PartnerLevel` (per the fixed mapping) and cannot be modified by partners or admins via profile save APIs. If `PartnerProfile` continues to expose an `hourlyRate` field to the frontend, its returned value must always match the derived mapping for the stored level.",
+      "reqIds": [
+        "REQ-105"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-138",
+      "summary": "Implement backend upgrade/migration support for partner data changes (conditionally, only if required by the type/state changes) so existing partner records continue to load after deployment. During migration, infer `PartnerLevel` from the previously stored hourly rate when it exactly matches `35000`/`55000`/`75000`; otherwise default to `junior`. After migration, normalize/override the effective hourly rate so it always matches the fixed mapping for the inferred/default level.",
+      "reqIds": [
+        "REQ-106"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-139",
+      "summary": "Update `backend/main.mo` to expand the backend partner status model by extending the `PartnerStatus` variant to include all required statuses: `#pending`, `#active`, `#rejected`, `#suspended`, and `#blacklist`.",
+      "reqIds": [
+        "REQ-107"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-140",
+      "summary": "Add a new `PartnerLevel` type in `backend/main.mo` with exactly three values: `#junior`, `#senior`, and `#expert`.",
+      "reqIds": [
+        "REQ-108"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-141",
+      "summary": "Implement a single source-of-truth backend mapping function in `backend/main.mo` that derives the hourly rate from `PartnerLevel` using the fixed mapping: junior=35000, senior=55000, expert=75000.",
+      "reqIds": [
+        "REQ-109"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-142",
+      "summary": "Update Client Service Request submit flow so a successfully created request also appears in the linked Asistenmu dashboard under \"Permintaan Masuk\" for the Asistenmu PrincipalId associated with the Client’s selected active Layanan; add a \"Pilih Layanan\" field to the request form that lists the client’s active layanan (dropdown only when multiple different service types exist), and derive the target Asistenmu from the selected layanan (no placeholder asistenmuId).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-143",
+      "summary": "Enhance ClientCreateRequestForm so after successful submit the request is also routed into Asistenmu Dashboard > \"Permintaan Masuk\" for the Asistenmu PrincipalId linked to the selected Client active Layanan. Add a conditional \"Pilih Layanan\" field: group/decide multiplicity by Subscription.serviceType; if the client has >1 active serviceType show a dropdown, otherwise auto-select the only active layanan and hide the field. Dropdown option label must show the layanan name + remaining quota/sisa layanan.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-146",
+      "summary": "Improve/refine the Landing Page UI/visual design (tampilan landing page) while keeping existing CTAs and public accessibility",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-147",
+      "summary": "Landing page UI adjustments: make Layanan cards and 'Card Menanggung sendiri' white with thin border; change all CTA buttons to match the existing 'Masuk' button color with white text; replace all dark grey backgrounds with brighter light gray across all areas including partner registration form; make header transparent; make 'Bergabung dengan Asistenku' detail card white; add footer logo (use existing header mobile logo) centered above first footer text; enlarge header Asistenku logo closer to header line while keeping top/bottom margin; update copyright text to 'Asistenku © 2026 - PT Asistenku Digital Indonesia'.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-148",
+      "summary": "Update header styling across all dashboards and landing page: white with slight transparency, no heavy shadow, subtle divider; when scrolling background should appear blurred so header text remains readable",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-149",
+      "summary": "Adjust Landing Page hero headline typography: reduce font size so the headline wraps exactly as two lines (one sentence per line): \"Tenang menjalani hari,\" and \"Didampingi oleh Asistenmu dengan rapi.\"",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-150",
+      "summary": "Fix all \"Masuk\" (Login) buttons across the app to correctly trigger Internet Identity (II) login flow (restore previous behavior)",
+      "reqIds": [],
+      "status": "in_progress"
     }
   ],
-  "architectural_notes": [
-    "Frontend is a React SPA using TanStack Router (route tree in App.tsx) and @tanstack/react-query for data fetching/mutations with cache invalidation.",
-    "Authentication is encapsulated in an InternetIdentityProvider built on @dfinity/auth-client, exposing identity + login/logout + status flags.",
-    "A dedicated useActor hook creates an anonymous vs identity-bound canister actor and (when authenticated) calls a backend access-control initialization method.",
-    "Sensitive bootstrap/admin token is read from the URL hash and persisted in sessionStorage, then removed from the URL (utils/urlParams.ts).",
-    "Backend authorization is separated into an AccessControl module and a MixinAuthorization that exposes authorization-related canister methods.",
-    "Backend domain state is stored in stable Maps for users and userProfiles, plus a stable systemInitialized flag.",
-    "Admin UX is organized as a tabbed admin dashboard with separate panels for partner activation, Asistenmu assignment, and a polled summary tab.",
-    "UI stack uses TailwindCSS + shadcn/ui components, lucide icons, sonner toasts, and next-themes for dark mode.",
-    "Most backend authorization/validation failures use Runtime.trap, surfacing as React Query errors in the UI.",
-    "React Query hooks provide a centralized typed client for backend calls (profiles, registration, partner flow, admin actions, stats)."
-  ],
-  "known_issues": [
-    "AccessControlState is not stable (not stored in stable vars), so role assignments can reset on canister upgrade/redeploy.",
-    "backend/main.mo registerClient calls AccessControl.assignRole(...,#user), which is admin-only in AccessControl; this will trap for non-admin callers and break client self-registration.",
-    "RoleRouter and useGetUserRole are based on AccessControl roles (#admin/#user/#guest), not the app’s domain roles (#client/#partner/#asistenmu/#admin), so the UI cannot reliably route to /partner or /asistenmu based on actual user role state.",
-    "Because _initializeAccessControlWithSecret is called on login, most authenticated users become AccessControl #user even if they never completed “registration” in the users Map, preventing redirect to /register in many cases.",
-    "useActor always calls _initializeAccessControlWithSecret; MixinAuthorization traps if CAFFEINE_ADMIN_TOKEN env var is missing, potentially breaking all authenticated sessions.",
-    "Partner application form data (companyName/contactEmail/description) is accepted by the backend but is not persisted, so admins cannot review application details beyond the pending user list.",
-    "LandingPage contains a dynamic import of RoleRouter that performs no action; redirects rely on the globally-rendered RoleRouter instead.",
-    "Several UI components are empty placeholders (e.g., AdminOwnerStatusCard.tsx, AdminOnlyActions.tsx, ProfileSetupModal.tsx).",
-    "There are two Tailwind CSS variable entrypoints (frontend/index.css and frontend/src/index.css), which can cause styling drift/confusion; only src/index.css is imported in main.tsx.",
-    "Admin summary stats include many placeholder zeros (serviceCounts/tasks/requests/financial/GMV), so the dashboard appears incomplete until real metrics are implemented."
-  ],
-  "isFixRequest": false,
   "gameProjectType": "none",
   "projectName": "Asistenku",
   "clarification_mode": "pro",

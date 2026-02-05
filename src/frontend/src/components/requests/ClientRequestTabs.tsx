@@ -1,184 +1,289 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
 import { Clock, Wrench, Eye, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { useGetClientRequests } from '../../hooks/useRequests';
 import RequestListState from './RequestListState';
-import ClientReviewActions from './ClientReviewActions';
+import { Badge } from '@/components/ui/badge';
+import { Request } from '../../backend';
 
-export default function ClientRequestTabs() {
-  const { data: requests, isLoading, error } = useGetClientRequests();
+interface ClientRequestTabsProps {
+  requests?: Request[];
+  isLoading?: boolean;
+  error?: Error | null;
+}
 
-  const delegatingRequests = requests?.filter(r => 
-    r.status.__kind__ === 'inProgress' && !r.status.inProgress
+export default function ClientRequestTabs({ requests, isLoading, error }: ClientRequestTabsProps) {
+  // Filter requests by status
+  const newRequests = requests?.filter(r => 
+    r.status.__kind__ === 'newlyCreated'
+  ) || [];
+
+  const assignedRequests = requests?.filter(r => 
+    r.status.__kind__ === 'offerSentToPartner' || r.status.__kind__ === 'assignedAsPartner'
   ) || [];
 
   const inProgressRequests = requests?.filter(r => 
-    r.status.__kind__ === 'inProgress' && r.status.inProgress
+    r.status.__kind__ === 'inProgressByPartner'
   ) || [];
 
-  const reviewRequests = requests?.filter(r => 
-    r.status.__kind__ === 'clientReviewPending'
+  const qaRequests = requests?.filter(r => 
+    r.status.__kind__ === 'qaRequestedByPartner'
   ) || [];
 
-  const revisingRequests = requests?.filter(r => 
-    r.status.__kind__ === 'revisionRequested'
+  const revisionRequests = requests?.filter(r => 
+    r.status.__kind__ === 'revisionRequestedByAsistenmu'
   ) || [];
 
   const completedRequests = requests?.filter(r => 
-    r.status.__kind__ === 'completed'
+    r.status.__kind__ === 'completedBYPartnerAndAsistenmu'
+  ) || [];
+
+  const rejectedRequests = requests?.filter(r => 
+    r.recordStatus === 'rejected'
   ) || [];
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <Tabs defaultValue="delegating" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
-            <TabsTrigger value="delegating" className="text-xs sm:text-sm">
-              <Clock className="w-4 h-4 mr-1" />
-              Delegating ({delegatingRequests.length})
-            </TabsTrigger>
-            <TabsTrigger value="inProgress" className="text-xs sm:text-sm">
-              <Wrench className="w-4 h-4 mr-1" />
-              In Progress ({inProgressRequests.length})
-            </TabsTrigger>
-            <TabsTrigger value="review" className="text-xs sm:text-sm">
-              <Eye className="w-4 h-4 mr-1" />
-              Review ({reviewRequests.length})
-            </TabsTrigger>
-            <TabsTrigger value="revising" className="text-xs sm:text-sm">
-              <AlertCircle className="w-4 h-4 mr-1" />
-              Revising ({revisingRequests.length})
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="text-xs sm:text-sm">
-              <CheckCircle2 className="w-4 h-4 mr-1" />
-              Completed ({completedRequests.length})
-            </TabsTrigger>
-          </TabsList>
+    <Tabs defaultValue="new" className="w-full">
+      <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 mb-6">
+        <TabsTrigger value="new" className="text-xs sm:text-sm">
+          <Clock className="w-4 h-4 mr-1" />
+          Baru ({newRequests.length})
+        </TabsTrigger>
+        <TabsTrigger value="assigned" className="text-xs sm:text-sm">
+          <Wrench className="w-4 h-4 mr-1" />
+          Ditugaskan ({assignedRequests.length})
+        </TabsTrigger>
+        <TabsTrigger value="inProgress" className="text-xs sm:text-sm">
+          <Wrench className="w-4 h-4 mr-1" />
+          Dikerjakan ({inProgressRequests.length})
+        </TabsTrigger>
+        <TabsTrigger value="qa" className="text-xs sm:text-sm">
+          <Eye className="w-4 h-4 mr-1" />
+          QA ({qaRequests.length})
+        </TabsTrigger>
+        <TabsTrigger value="revision" className="text-xs sm:text-sm">
+          <AlertCircle className="w-4 h-4 mr-1" />
+          Revisi ({revisionRequests.length})
+        </TabsTrigger>
+        <TabsTrigger value="completed" className="text-xs sm:text-sm">
+          <CheckCircle2 className="w-4 h-4 mr-1" />
+          Selesai ({completedRequests.length})
+        </TabsTrigger>
+        <TabsTrigger value="rejected" className="text-xs sm:text-sm">
+          <AlertCircle className="w-4 h-4 mr-1" />
+          Ditolak ({rejectedRequests.length})
+        </TabsTrigger>
+      </TabsList>
 
-          <TabsContent value="delegating">
-            <RequestListState
-              requests={delegatingRequests}
-              isLoading={isLoading}
-              error={error}
-              emptyMessage="No requests in delegation process"
-              renderRequest={(request) => (
-                <div className="p-4 border rounded-lg space-y-2">
-                  <h3 className="font-semibold">{request.title}</h3>
-                  <p className="text-sm text-muted-foreground">{request.details}</p>
-                  {request.deadline && (
-                    <p className="text-xs text-muted-foreground">
-                      Deadline: {new Date(Number(request.deadline) / 1000000).toLocaleDateString()}
-                    </p>
-                  )}
-                  <p className="text-xs text-amber-600">Status: Sedang dalam proses delegasi permintaan</p>
-                </div>
+      <TabsContent value="new">
+        <RequestListState
+          requests={newRequests}
+          isLoading={isLoading || false}
+          error={error || null}
+          emptyMessage="Tidak ada permintaan baru"
+          renderRequest={(request) => (
+            <div className="p-4 border rounded-lg space-y-2">
+              <div className="flex items-start justify-between">
+                <h3 className="font-semibold">#{request.id.toString()} - {request.title}</h3>
+                <Badge>Baru</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">{request.details}</p>
+              {request.deadline && (
+                <p className="text-xs text-muted-foreground">
+                  Deadline: {new Date(Number(request.deadline) / 1000000).toLocaleDateString('id-ID')}
+                </p>
               )}
-            />
-          </TabsContent>
+              <p className="text-xs text-amber-600">Status: Menunggu penugasan ke partner</p>
+            </div>
+          )}
+        />
+      </TabsContent>
 
-          <TabsContent value="inProgress">
-            <RequestListState
-              requests={inProgressRequests}
-              isLoading={isLoading}
-              error={error}
-              emptyMessage="No requests in progress"
-              renderRequest={(request) => (
-                <div className="p-4 border rounded-lg space-y-2">
-                  <h3 className="font-semibold">{request.title}</h3>
-                  <p className="text-sm text-muted-foreground">{request.details}</p>
-                  {request.deadline && (
-                    <p className="text-xs text-muted-foreground">
-                      Deadline: {new Date(Number(request.deadline) / 1000000).toLocaleDateString()}
-                    </p>
-                  )}
-                  <p className="text-xs text-blue-600">Status: Dalam proses pengerjaan</p>
-                </div>
+      <TabsContent value="assigned">
+        <RequestListState
+          requests={assignedRequests}
+          isLoading={isLoading || false}
+          error={error || null}
+          emptyMessage="Tidak ada permintaan yang ditugaskan"
+          renderRequest={(request) => (
+            <div className="p-4 border rounded-lg space-y-2">
+              <div className="flex items-start justify-between">
+                <h3 className="font-semibold">#{request.id.toString()} - {request.title}</h3>
+                <Badge variant="outline">Ditugaskan</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">{request.details}</p>
+              {request.deadline && (
+                <p className="text-xs text-muted-foreground">
+                  Deadline: {new Date(Number(request.deadline) / 1000000).toLocaleDateString('id-ID')}
+                </p>
               )}
-            />
-          </TabsContent>
+              <p className="text-xs text-blue-600">Status: Telah ditugaskan ke partner</p>
+            </div>
+          )}
+        />
+      </TabsContent>
 
-          <TabsContent value="review">
-            <RequestListState
-              requests={reviewRequests}
-              isLoading={isLoading}
-              error={error}
-              emptyMessage="No requests awaiting review"
-              renderRequest={(request) => (
-                <div className="p-4 border rounded-lg space-y-3">
-                  <h3 className="font-semibold">{request.title}</h3>
-                  <p className="text-sm text-muted-foreground">{request.details}</p>
-                  {request.deadline && (
-                    <p className="text-xs text-muted-foreground">
-                      Deadline: {new Date(Number(request.deadline) / 1000000).toLocaleDateString()}
-                    </p>
-                  )}
-                  {request.status.__kind__ === 'clientReviewPending' && request.status.clientReviewPending.reviewLink && (
-                    <a
-                      href={request.status.clientReviewPending.reviewLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-primary hover:underline flex items-center gap-1"
-                    >
-                      View Review Link →
-                    </a>
-                  )}
-                  <ClientReviewActions requestId={request.id} />
-                </div>
+      <TabsContent value="inProgress">
+        <RequestListState
+          requests={inProgressRequests}
+          isLoading={isLoading || false}
+          error={error || null}
+          emptyMessage="Tidak ada permintaan dalam pengerjaan"
+          renderRequest={(request) => (
+            <div className="p-4 border rounded-lg space-y-2">
+              <div className="flex items-start justify-between">
+                <h3 className="font-semibold">#{request.id.toString()} - {request.title}</h3>
+                <Badge variant="outline">Dikerjakan</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">{request.details}</p>
+              {request.deadline && (
+                <p className="text-xs text-muted-foreground">
+                  Deadline: {new Date(Number(request.deadline) / 1000000).toLocaleDateString('id-ID')}
+                </p>
               )}
-            />
-          </TabsContent>
+              <p className="text-xs text-blue-600">Status: Sedang dikerjakan partner</p>
+            </div>
+          )}
+        />
+      </TabsContent>
 
-          <TabsContent value="revising">
-            <RequestListState
-              requests={revisingRequests}
-              isLoading={isLoading}
-              error={error}
-              emptyMessage="No requests under revision"
-              renderRequest={(request) => (
-                <div className="p-4 border rounded-lg space-y-2">
-                  <h3 className="font-semibold">{request.title}</h3>
-                  <p className="text-sm text-muted-foreground">{request.details}</p>
-                  {request.deadline && (
-                    <p className="text-xs text-muted-foreground">
-                      Deadline: {new Date(Number(request.deadline) / 1000000).toLocaleDateString()}
-                    </p>
-                  )}
-                  {request.status.__kind__ === 'revisionRequested' && (
-                    <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/20 rounded">
-                      <p className="text-xs font-medium text-amber-800 dark:text-amber-200">Revision Notes:</p>
-                      <p className="text-sm text-amber-700 dark:text-amber-300">
-                        {request.status.revisionRequested.revisionDetails}
-                      </p>
-                    </div>
-                  )}
-                  <p className="text-xs text-amber-600">Status: Sedang direvisi, mohon tunggu</p>
-                </div>
+      <TabsContent value="qa">
+        <RequestListState
+          requests={qaRequests}
+          isLoading={isLoading || false}
+          error={error || null}
+          emptyMessage="Tidak ada permintaan QA"
+          renderRequest={(request) => (
+            <div className="p-4 border rounded-lg space-y-2">
+              <div className="flex items-start justify-between">
+                <h3 className="font-semibold">#{request.id.toString()} - {request.title}</h3>
+                <Badge>QA Review</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">{request.details}</p>
+              {request.deadline && (
+                <p className="text-xs text-muted-foreground">
+                  Deadline: {new Date(Number(request.deadline) / 1000000).toLocaleDateString('id-ID')}
+                </p>
               )}
-            />
-          </TabsContent>
+              <p className="text-xs text-purple-600">Status: Menunggu review dari Asistenmu</p>
+            </div>
+          )}
+        />
+      </TabsContent>
 
-          <TabsContent value="completed">
-            <RequestListState
-              requests={completedRequests}
-              isLoading={isLoading}
-              error={error}
-              emptyMessage="No completed requests"
-              renderRequest={(request) => (
-                <div className="p-4 border rounded-lg space-y-2 bg-green-50 dark:bg-green-950/20">
-                  <h3 className="font-semibold">{request.title}</h3>
-                  <p className="text-sm text-muted-foreground">{request.details}</p>
-                  {request.deadline && (
-                    <p className="text-xs text-muted-foreground">
-                      Deadline: {new Date(Number(request.deadline) / 1000000).toLocaleDateString()}
-                    </p>
-                  )}
-                  <p className="text-xs text-green-600">Status: Selesai</p>
+      <TabsContent value="revision">
+        <RequestListState
+          requests={revisionRequests}
+          isLoading={isLoading || false}
+          error={error || null}
+          emptyMessage="Tidak ada permintaan revisi"
+          renderRequest={(request) => {
+            const revisionData = request.status.__kind__ === 'revisionRequestedByAsistenmu'
+              ? request.status.revisionRequestedByAsistenmu
+              : null;
+
+            return (
+              <div className="p-4 border rounded-lg space-y-2">
+                <div className="flex items-start justify-between">
+                  <h3 className="font-semibold">#{request.id.toString()} - {request.title}</h3>
+                  <Badge variant="outline">Revisi</Badge>
                 </div>
-              )}
-            />
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+                <p className="text-sm text-muted-foreground">{request.details}</p>
+                {request.deadline && (
+                  <p className="text-xs text-muted-foreground">
+                    Deadline: {new Date(Number(request.deadline) / 1000000).toLocaleDateString('id-ID')}
+                  </p>
+                )}
+                {revisionData && (
+                  <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-800">
+                    <p className="text-xs font-medium text-amber-800 dark:text-amber-200 mb-1">
+                      Catatan Revisi:
+                    </p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      {revisionData.revisionByAsistenmu}
+                    </p>
+                  </div>
+                )}
+                <p className="text-xs text-amber-600">Status: Sedang direvisi partner</p>
+              </div>
+            );
+          }}
+        />
+      </TabsContent>
+
+      <TabsContent value="completed">
+        <RequestListState
+          requests={completedRequests}
+          isLoading={isLoading || false}
+          error={error || null}
+          emptyMessage="Belum ada permintaan yang selesai"
+          renderRequest={(request) => {
+            const completionData = request.status.__kind__ === 'completedBYPartnerAndAsistenmu'
+              ? request.status.completedBYPartnerAndAsistenmu
+              : null;
+
+            return (
+              <div className="p-4 border rounded-lg space-y-2 bg-green-50 dark:bg-green-950/20">
+                <div className="flex items-start justify-between">
+                  <h3 className="font-semibold">#{request.id.toString()} - {request.title}</h3>
+                  <Badge className="bg-green-500">Selesai</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">{request.details}</p>
+                {request.deadline && (
+                  <p className="text-xs text-muted-foreground">
+                    Deadline: {new Date(Number(request.deadline) / 1000000).toLocaleDateString('id-ID')}
+                  </p>
+                )}
+                {completionData && completionData.finalReport && (
+                  <div className="mt-2 p-3 bg-accent rounded">
+                    <p className="text-xs font-medium mb-1">Laporan Akhir:</p>
+                    <p className="text-sm text-muted-foreground">{completionData.finalReport}</p>
+                  </div>
+                )}
+                <p className="text-xs text-green-600">Status: Selesai dan disetujui</p>
+              </div>
+            );
+          }}
+        />
+      </TabsContent>
+
+      <TabsContent value="rejected">
+        <RequestListState
+          requests={rejectedRequests}
+          isLoading={isLoading || false}
+          error={error || null}
+          emptyMessage="Tidak ada permintaan yang ditolak"
+          renderRequest={(request) => {
+            const rejectionData = request.status.__kind__ === 'rejectedByPartner'
+              ? request.status.rejectedByPartner
+              : null;
+
+            return (
+              <div className="p-4 border rounded-lg space-y-2 bg-destructive/5">
+                <div className="flex items-start justify-between">
+                  <h3 className="font-semibold">#{request.id.toString()} - {request.title}</h3>
+                  <Badge variant="destructive">Ditolak</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">{request.details}</p>
+                {request.deadline && (
+                  <p className="text-xs text-muted-foreground">
+                    Deadline: {new Date(Number(request.deadline) / 1000000).toLocaleDateString('id-ID')}
+                  </p>
+                )}
+                {rejectionData && (
+                  <div className="mt-2 p-3 bg-destructive/10 rounded border border-destructive/20">
+                    <p className="text-xs font-medium text-destructive mb-1">
+                      Alasan Penolakan:
+                    </p>
+                    <p className="text-sm text-destructive/90">
+                      {rejectionData.revisionByPartner}
+                    </p>
+                  </div>
+                )}
+                <p className="text-xs text-destructive">Status: Ditolak oleh partner</p>
+              </div>
+            );
+          }}
+        />
+      </TabsContent>
+    </Tabs>
   );
 }

@@ -1,214 +1,78 @@
 {
   "kind": "build_request",
-  "title": "Implement MVP Service Request (Permintaan) flow between Client and Asistenmu",
+  "title": "Unify translucent white headers, adjust landing hero headline wrapping, and fix all Login (II) buttons",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-10",
-      "text": "Add a new backend domain model for an MVP “Service Request/Permintaan” that supports: (1) Client creates a request (title, details, optional deadline date), (2) Asistenmu updates request state via a dropdown (In Progress / Request Client Review), optionally storing a Google Drive link when requesting review, (3) Client can either request a revision (mandatory revision details) or mark the request complete (with confirmation). Ensure requests persist in canister state without removing or breaking existing users/subscriptions/service logic.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Client membuat permintaan\nMengisi form\nJudul Permintaan\nDetail Permintaan\nDeadline Permintaan (date) opsional",
-          "Asistenmu bisa update status dengan memilih (dropdown)\n#Dalam proses Pengerjaan \n#Meminta Review Client",
-          "Saat memilih #meminta Review Client buka field untuk memasukkan link gdrive",
-          "Munculkan button Meminta revisi dan Selesai\nBila button meminta revisi yang dipilih munculkan field untuk mengisi detail revisi",
-          "Jika klik Selesai berikan warning box"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend stores each request with: requestId, clientPrincipal, assignedAsistenmuPrincipal (derived), title, details, optional deadline, status, optional reviewLink, optional revisionDetails, createdAt, updatedAt",
-        "A request can transition only through the MVP states needed for: newly submitted → in progress → review requested → (revision requested OR completed)",
-        "Data is accessible via query APIs for both Client and Asistenmu dashboards (per role rules in later requirements)"
-      ]
-    },
-    {
-      "id": "REQ-11",
-      "text": "Implement backend assignment resolution so that when a Client creates a request, it is routed to the Asistenmu assigned through the Client’s active Layanan/subscription (not from any field manually set on the request). If the Client has no active subscription with an assigned Asistenmu, the backend must reject request creation with a clear error.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Button kirim permintaan --> masuk ke dashboard Asistenmu yang di assign melalui layanan yang aktif di client.",
-          "Tambahan : button Buat Permintaan saat client membuat permintaannya hanya aktif apabila client mempunyai layanan Aktif di profilenya"
-        ]
-      },
-      "acceptanceCriteria": [
-        "createRequest() traps/returns an error if caller is not a Client",
-        "createRequest() traps/returns an error if there is no active subscription for the caller OR no assigned Asistenmu on the active subscription",
-        "When creation succeeds, the request is visible to exactly that assigned Asistenmu via an Asistenmu listing API"
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "text": "Add backend APIs (queries + mutations) for the MVP request flow with role-based authorization: Client: create request, list own requests by client-facing tabs, submit revision (with mandatory revision details), mark complete; Asistenmu: list requests assigned via subscriptions, update request status (In Progress / Request Client Review), set/clear review link when requesting review. Enforce that Client actions are only allowed in the review stage, and Asistenmu actions are not allowed after completion.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Disini Asistenmu bisa update status",
-          "Saat memilih #meminta Review Client buka field untuk memasukkan link gdrive",
-          "Munculkan button Meminta revisi dan Selesai"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Client cannot request revision or mark complete unless the request is in “Request Client Review” state",
-        "Asistenmu cannot change a request once it is completed",
-        "All endpoints validate caller role using existing user registry role data (Client vs Asistenmu) and reject unauthorized callers"
-      ]
-    },
-    {
-      "id": "REQ-13",
-      "text": "Add backend endpoints to support Client-side gating of the “Create Request (Buat Permintaan)” CTA by returning the caller’s subscription/service summary, including: total subscription count and active subscription count (and whether an active subscription has an assigned Asistenmu). This must be callable by the Client (not admin-only).",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Button Buat Permintaan saat client membuat permintaannya hanya aktif apabila client mempunyai layanan Aktif di profilenya",
-          "Button Buat Permintaan juga hanya aktif jika jumlah layanan yang ada itu tidak 0 nilainya"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Client can query their own service/subscription counts without admin privileges",
-        "The response is sufficient for the frontend to decide whether to enable/disable the Create Request button and show a warning message"
-      ]
-    },
-    {
-      "id": "REQ-14",
-      "text": "Implement the Client Dashboard UI for the MVP request flow with these tabs: (1) “Delegating Request” (initial post-submit state), (2) “In Progress”, (3) “Client Review Requested” (shows clickable review link when present and shows CTAs), (4) “Revising (Please Wait)”, (5) “Completed”. Provide a “Create Request” form with fields Title, Details, optional Deadline (date).",
+      "id": "REQ-118",
+      "text": "Update the header styling on the Landing page and all dashboard pages (Admin, Client, Asistenmu, Partner) to use a white header with slight transparency, a subtle bottom divider, and a backdrop blur effect so underlying content remains visible while header text stays readable during scroll. Avoid heavy drop shadows.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-5"
         ],
         "quotes": [
-          "Client membuat permintaan\nMengisi form\nJudul Permintaan\nDetail Permintaan\nDeadline Permintaan (date) opsional",
-          "Status di client Sedang dalam proses delegasi permintaan",
-          "di client masuk tab Meminta Review muncul link yang bisa di klik oleh client",
-          "pindahkan ke tab Permintaan Selesai di Dashboard Client"
+          "buat header di semua dashboard dan landing page dengan warna putih tanpa shadow berat hanya pemisah halus sehingga saat di scroll background tetap terlihat seperti blur sehingga tulisan di header tetap terlihat.",
+          "2. putih dengan sedikit transparansi"
         ]
       },
       "acceptanceCriteria": [
-        "Client can submit a request and immediately see it appear in the correct Client tab/state",
-        "In the “Client Review Requested” tab, a review link is rendered as a clickable link when present",
-        "The UI uses React Query hooks for loading/error/empty states per tab"
+        "LandingPage and each dashboard page header is sticky and uses a translucent white background (not solid dark/gray).",
+        "A backdrop blur is applied (e.g., via Tailwind backdrop-blur classes) so content behind the header appears blurred when scrolling.",
+        "There is a subtle bottom border/divider line; there is no heavy shadow on the header.",
+        "Header content (logo/text/buttons) remains readable on scroll across light backgrounds."
       ]
     },
     {
-      "id": "REQ-15",
-      "text": "Implement Client-side gating UX for the “Create Request (Buat Permintaan)” CTA: disable the button unless (a) the Client has at least 1 subscription AND (b) at least 1 active subscription. When gated, display the warning text exactly: \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\".",
+      "id": "REQ-119",
+      "text": "Adjust the Landing page hero headline typography so it renders as exactly two lines (one sentence per line) with a smaller font size, and update the headline text casing to match the requested two-line copy.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-5"
         ],
         "quotes": [
-          "Berikan juga Warning Text \"Aktifkan layanan terlebih dahulu sebelum membuat permintaan\"",
-          "Button Buat Permintaan saat client membuat permintaannya hanya aktif apabila client mempunyai layanan Aktif di profilenya",
-          "Button Buat Permintaan juga hanya aktif jika jumlah layanan yang ada itu tidak 0 nilainya"
+          "Tulisan di hero section  untuk Headline buat lebih kecil sehingga cukup untuk satu kalimat per barisnya untuk tulisan \"Tenang menjalani hari,\ndidampingi oleh Asistenmu dengan rapi.\"",
+          "3. mengecilkan font size agar pas 1 line per kalimat\nseperti ini : \nTenang menjalani hari,\nDidampingi oleh Asistenmu dengan rapi."
         ]
       },
       "acceptanceCriteria": [
-        "When total subscriptions == 0, Create Request is disabled and the warning text is visible",
-        "When active subscriptions == 0, Create Request is disabled and the warning text is visible",
-        "When there is at least one active subscription, Create Request becomes enabled"
+        "The hero headline text is exactly:\nLine 1: \"Tenang menjalani hari,\"\nLine 2: \"Didampingi oleh Asistenmu dengan rapi.\"",
+        "The hero headline font size is reduced from the current sizing so each sentence fits on a single line on typical mobile and desktop widths (no unintended wrapping beyond the explicit line break).",
+        "Only the hero headline typography/copy is changed; other hero content remains intact."
       ]
     },
     {
-      "id": "REQ-16",
-      "text": "Implement the Asistenmu Dashboard UI with a tab “New Client Requests” showing requests routed to that Asistenmu via the Client’s active subscription assignment, and a status dropdown with exactly two options: “In Progress” and “Request Client Review”. When “Request Client Review” is selected, reveal an input field to capture the Google Drive link and persist it to the backend.",
+      "id": "REQ-120",
+      "text": "Fix all \"Masuk\" / login buttons across the app so they correctly trigger the Internet Identity (II) login flow (restoring previous behavior), using the existing Internet Identity hook/logic without editing immutable authentication hook files.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-5"
         ],
         "quotes": [
-          "Masuk di dashboard Asistenmu di tab Permintaan Baru Client",
-          "Asistenmu bisa update status dengan memilih (dropdown)\n#Dalam proses Pengerjaan \n#Meminta Review Client",
-          "Saat memilih #meminta Review Client buka field untuk memasukkan link gdrive"
+          "perbaiki tombol masuk agar memanggil fungsi login dengan menggunakan II",
+          "1. Semua tombol masuk menjadi bisa login dengan II seperti sebelumnya"
         ]
       },
       "acceptanceCriteria": [
-        "Asistenmu can see only requests assigned to them through active client subscriptions",
-        "Changing the dropdown to “In Progress” persists and moves the request to the correct state/tab views",
-        "Changing the dropdown to “Request Client Review” requires a link field to appear and saves the link (optional unless explicitly required by backend)"
-      ]
-    },
-    {
-      "id": "REQ-17",
-      "text": "In the Client “Client Review Requested” tab, implement the two CTAs: (1) “Request Revision” which reveals a mandatory revision details field and a submit button (“Submit Revision Request”), and (2) “Complete” which shows a confirmation dialog; upon confirming, mark the request completed and move it to the “Completed” tab in both Client and Asistenmu dashboards.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Munculkan button Meminta revisi dan Selesai",
-          "Bila button meminta revisi yang dipilih munculkan field untuk mengisi detail revisi dan Button Kirim Permintaan Revisi",
-          "Jika klik Selesai berikan warning box, dan setelah di klik Ya langsung pindahkan ke tab Permintaan Selesai di Dashboard Client dan Asistenmu"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Revision submission is blocked in the UI until revision details are provided",
-        "Complete action always requires an explicit confirm step before mutation is sent",
-        "After completion, both dashboards show the request under “Completed” without requiring a manual refresh (via query invalidation)"
-      ]
-    },
-    {
-      "id": "REQ-18",
-      "text": "Add/extend centralized React Query hooks to support all MVP request queries and mutations for Client and Asistenmu dashboards, using the existing actor pattern. Ensure status changes invalidate the appropriate query keys so that requests move between tabs immediately after a successful mutation.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Implementasi UI, status, dan flow sesuai di atas"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All request lists and actions are performed through hooks in the existing hooks pattern (React Query + actor)",
-        "After each mutation (create, status update, request revision, complete), the relevant request list queries refetch and reflect the new state"
-      ]
-    },
-    {
-      "id": "REQ-19",
-      "text": "Add router routes for the Client and Asistenmu dashboards (e.g., /client and /asistenmu) and connect navigation/redirect behavior so authenticated users can reach their correct dashboard without editing immutable authentication hook files.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Masuk di dashboard Asistenmu",
-          "di Dashboard Client"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The app has working routes for Client and Asistenmu dashboard pages",
-        "No changes are made to immutable paths (authentication hooks and UI component sources marked read-only)",
-        "A logged-in user with role Client can navigate to the Client dashboard; a user with role Asistenmu can navigate to the Asistenmu dashboard"
+        "Every UI control labeled \"Masuk\" (or otherwise intended to log in) triggers the II login flow and successfully authenticates the user.",
+        "After a successful login from public pages, the app can proceed to the existing role-based routing behavior (e.g., redirect to /dashboard and onward as currently implemented).",
+        "No changes are made to files under the immutable paths listed in SYSTEM_CONTEXT (authentication hooks are composed/used as-is).",
+        "Login buttons properly handle the logging-in state (disabled/loading) to prevent double-click issues."
       ]
     }
   ],
   "constraints": [
-    "Do not remove or break existing backend users/subscriptions/service logic.",
-    "Backend must remain single-actor (all Motoko logic in backend/main.mo).",
-    "Do not edit immutable frontend paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui."
+    "Frontend files under the immutable paths in SYSTEM_CONTEXT must not be edited (compose existing authentication hooks/components instead).",
+    "Keep the existing app routes and role-based routing behavior intact; only fix the login triggers and UI styling requested.",
+    "Do not introduce heavy header shadows; use only a subtle divider and translucency + blur.",
+    "Use English for any user-facing text in this build request document (the app UI copy changes are only those explicitly requested for the hero headline)."
   ],
   "nonGoals": [
-    "Do not implement the full multi-stage Partner/QA workflow (accept/reject, QA, partner assignment search, etc.) beyond the simplified MVP described.",
-    "Do not activate or redesign the Admin “Permintaan” tab in this build unless it is strictly required for the Client↔Asistenmu MVP flow.",
-    "Do not introduce external databases or third-party authentication providers beyond Internet Identity."
+    "No backend/canister changes are required for this request.",
+    "No redesign of page layouts beyond header styling and the specific hero headline typography/copy change.",
+    "No new authentication provider or third-party auth integration (Internet Identity only)."
   ],
   "imageRequirements": {
     "required": [],
